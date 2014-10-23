@@ -16,15 +16,15 @@ EFIAPI
 efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
   // Memory Map
-  UINTN mapsize = 0;
-  UINTN allocsize = 0;
+  UINTN mapsize               = 0;
+  UINTN allocsize             = 0;
   EFI_MEMORY_DESCRIPTOR * map = NULL;
-  UINTN mapkey = 0;
-  UINTN descriptorsize = 0;
-  UINT32 version = 0;
+  UINTN mapkey                = 0;
+  UINTN descriptorsize        = 0;
+  UINT32 version              = 0;
     
 
-  void * towrite = (void*)0x1000;
+  void * towrite = (void*)0x1000; // to test capabilities
   
   InitializeLib(ImageHandle, SystemTable);
    
@@ -39,17 +39,14 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   PrintELFInfo(elfheader);
 
-  EFI_STATUS memret = EFI_SUCCESS;
-
-
+  EFI_STATUS memret     = EFI_SUCCESS;
   EFI_STATUS bootstatus = EFI_SUCCESS;
-
 
   EFI_STATUS memst = uefi_call_wrapper(BS->GetMemoryMap, 5, &mapsize, map, &mapkey, &descriptorsize, &version);
 
   if(memst == EFI_BUFFER_TOO_SMALL)
   {
-    Print(L"mapSize gotten\n");
+    Print(L"MapSize read successful\n");
   }
 
   allocsize = mapsize + 10*4098;
@@ -67,7 +64,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   if(memst == EFI_SUCCESS)
   {
-    Print(L"MemoryMap Gotten\n");
+    Print(L"MemoryMap Aquired\n");
   }
 
   Print(L"Calling ExitBootServices\n");
