@@ -27,7 +27,6 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
    BS->SetWatchdogTimer(0, 0, 0, NULL);
    
    uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut); // clear the screen
-   Print(L"Hello, world!\n");
    Print(L"Firmware Vendor: %s Rev: 0x%08x\n", ST->FirmwareVendor, ST->FirmwareRevision);
    
    ELF * elfheader = (ELF*)kernel_bin;
