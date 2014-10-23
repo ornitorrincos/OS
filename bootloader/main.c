@@ -5,6 +5,7 @@
 #include "ELF.h"
 #include "kernel.h"
 
+extern void BootDisableInterrupts(void);
 typedef void (*kfn)(int dummy);
 
 void
@@ -104,6 +105,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 	
 	SetCrc(&(SystemTable->Hdr)); // As we exited boot services we need to set the CRC32 again
 	
+  BootDisableInterrupts();
+  
 	*((int*)towrite) = 0xB00B;
 	    
 	//((EFI_PHYSICAL_ADDRESS)kernel_bin) + elfheader->EntryPoint;
