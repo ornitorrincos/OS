@@ -2,8 +2,11 @@
 #include <efilib.h>
 #include <efidef.h>
 
+#include "disk.h"
+
 #include "ELF.h"
 #include "kernel.h"
+
 
 extern void BootDisableInterrupts(void);
 typedef void (*kfn)(int dummy);
@@ -30,25 +33,11 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut); // clear the screen
   Print(L"Firmware Vendor: %s Rev: 0x%08x\n", ST->FirmwareVendor, ST->FirmwareRevision);
    
+  ELF * kernel = LoadFile(L"kernel.bin");
+
   ELF * elfheader = (ELF*)kernel_bin;
 
-  if(elfheader->Magic == ELFMAGIC)
-  {
-    Print(L"Kernel in ELF format found\n");
-  }
-
-  if(elfheader->Class == 2)
-  {
-    Print(L"64 Bits Executable\n");
-  }
-
-  if(elfheader->OSABI == 0)
-  {
-    Print(L"System V ABI\n");
-  }
-
-  Print(L"Kernel Entry Point: %x\n", elfheader->EntryPoint);
-
+  PrintELFInfo(elfheader);
 
   EFI_STATUS memret = EFI_SUCCESS;
 
@@ -83,6 +72,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   Print(L"Calling ExitBootServices\n");
 
+  // never ever call Print after the next line
+  // after the first call boot services are partially disabled
   while((bootstatus = uefi_call_wrapper(BS->ExitBootServices, 2, ImageHandle, mapkey)) != EFI_SUCCESS)
   {
 

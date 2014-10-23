@@ -5,8 +5,15 @@ CONFIG -= qt
 
 INCLUDEPATH += /usr/include/efi
 
-SOURCES += main.c misc.s
+SOURCES += main.c misc.s \
+    disk.c \
+    ELF.c
 
 include(deployment.pri)
 qtcAddDeployment()
+
+HEADERS += \
+    ELF.h \
+    kernel.h \
+    disk.h
 
