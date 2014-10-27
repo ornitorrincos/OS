@@ -22,9 +22,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   UINTN mapkey                = 0;
   UINTN descriptorsize        = 0;
   UINT32 version              = 0;
-    
 
-  void * towrite = (void*)0x1000; // to test capabilities
   
   InitializeLib(ImageHandle, SystemTable);
    
@@ -33,12 +31,9 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut); // clear the screen
   Print(L"Firmware Vendor: %s Rev: 0x%08x\n", ST->FirmwareVendor, ST->FirmwareRevision);
    
-  ELF * kernel = LoadFile(L"kernel.bin");
+  //ELF * kernel = LoadFile(L"kernel.bin");
 
-  //ELF * elfheader = (ELF*)kernel_bin;
-  ELF * elfheader = (ELF*)kernel;
-
-  PrintELFInfo(elfheader);
+  //PrintELFInfo(kernel);
 
   EFI_STATUS memret     = EFI_SUCCESS;
   EFI_STATUS bootstatus = EFI_SUCCESS;
@@ -93,16 +88,21 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   SetCrc(&(SystemTable->Hdr)); // As we exited boot services we need to set the CRC32 again
 
   BootDisableInterrupts();
-  
-  *((int*)towrite) = 0xB00B;
+
+  int * towrite = (int*)0x150;
+  (*towrite) = (int)0xBBBB;
 
   //((EFI_PHYSICAL_ADDRESS)kernel_bin) + elfheader->EntryPoint;
 
-  while(1){}
+  ELF * test = (ELF*)kernel_bin;
+  //kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
+  kfn kernel_jump = (void*)(((EFI_PHYSICAL_ADDRESS)kernel_bin) + test->EntryPoint);
 
-  kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel_bin) + elfheader->EntryPoint;
+  //(*towrite) = (UINT64)kernel;
 
   kernel_jump(0);
+
+  (*towrite) = (int)0xEEEE;
 
   //while(1){} // kernel call should go here
 

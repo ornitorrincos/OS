@@ -3,116 +3,66 @@
 
 void * LoadFile(CHAR16 * name)
 {
-  // Get Protocol handle
-  EFI_GUID SimpleFileSystemProtocolGuid = SIMPLE_FILE_SYSTEM_PROTOCOL;
+  EFI_GUID EfiSimpleFileSystemGuid = SIMPLE_FILE_SYSTEM_PROTOCOL;
+  EFI_FILE_IO_INTERFACE * FSInterface = NULL;
+  struct _EFI_FILE_HANDLE * fsroot = NULL;
 
-  UINTN BufferSize = 4096;
-  EFI_HANDLE * HandleBuffer = AllocatePool(BufferSize);
-  UINTN DummySearchKey;
+  EFI_STATUS localteprotocolstat = uefi_call_wrapper(BS->LocateProtocol, 3, &EfiSimpleFileSystemGuid, NULL, &FSInterface);
 
-  //I_GUID = SIMPLE_FILE_SYSTEM_PROTOCOL;
-  //SIMPLE_FILE_SYSTEM_PROTOCOL FileProt;
-
-  EFI_STATUS ret = uefi_call_wrapper(BS->LocateHandle, 5, ByProtocol, &SimpleFileSystemProtocolGuid, &DummySearchKey, &BufferSize, HandleBuffer);
-
-  if(ret == EFI_BUFFER_TOO_SMALL)
+  if(localteprotocolstat != EFI_SUCCESS)
   {
-    Print(L"We found the FileSystem Protocol handle\n");
-    Print(L"But the Buffer is too small\n");
-    FreePool(HandleBuffer);
-    HandleBuffer = AllocatePool(BufferSize);
+    Print(L"Failed to locate protocol\n");
+  }
+
+  EFI_STATUS openvolumestat = uefi_call_wrapper(FSInterface->OpenVolume, 2, FSInterface, &fsroot);
+
+  if(openvolumestat != EFI_SUCCESS)
+  {
+    Print(L"FAiled to open the volume\n");
+  }
+
+  struct _EFI_FILE_HANDLE * fp = NULL;
+
+  EFI_STATUS openstat = uefi_call_wrapper(fsroot->Open, 5, fsroot, &fp, name, (UINT64)1, (UINT64)1);
+
+  if(openstat != EFI_SUCCESS)
+  {
+    Print(L"Failed opening the file\n");
+  }
+
+
+  UINTN infosize = 1024;
+  EFI_FILE_INFO * info = AllocatePool(infosize);
+  EFI_GUID infoguid = EFI_FILE_INFO_ID;
+
+  EFI_STATUS infostatus = uefi_call_wrapper(fp->GetInfo, 4, fp, &infoguid, &infosize, info);
+
+  if(infostatus != EFI_SUCCESS)
+  {
+    Print(L"Failed to get FileInfo\n");
   } else
   {
-    switch(ret)
-    {
-      case EFI_NOT_FOUND:
-        Print(L"Protocol Not found\n");
-        break;
-      case EFI_INVALID_PARAMETER:
-        Print(L"Invalid parameter\n");
-        break;
-    }
+    Print(L"FileSize: %d\n", info->FileSize);
   }
 
+  UINTN size = info->FileSize;
+  void * data = NULL;
 
+  //data = AllocatePool(size);
+  EFI_STATUS allocstatus = uefi_call_wrapper(BS->AllocatePool, 3, EfiLoaderData, size, (void**)&data);
 
-  ret = uefi_call_wrapper(BS->LocateHandle, 5, ByProtocol, &SimpleFileSystemProtocolGuid, &DummySearchKey, &BufferSize, HandleBuffer);
-
-  if(ret == EFI_SUCCESS)
+  if(allocstatus != EFI_SUCCESS)
   {
-    Print(L"And Loaded every handle to memory\n");
-    UINTN HandleNum = BufferSize/sizeof(EFI_HANDLE);
-    Print(L"Number of handles: %d\n", HandleNum);
+    Print(L"Failed to get Kernel memory\n");
   }
 
-  // From the handle get the protocol
+  // phoenix lies, must specify the size myself
+  uefi_call_wrapper(fp->Read, 3, fp, &size, data);
 
-  EFI_FILE_IO_INTERFACE * fileioprot;
+  Print(L"Read Size: %d\n", size);
 
-  EFI_FILE * fileprot;
+  uefi_call_wrapper(fp->Close, 1, fp);
 
-  //uefi_call_wrapper(BS->OpenProtocol, 6, *HandleBuffer, );
-  EFI_STATUS fileprotstat= uefi_call_wrapper(BS->HandleProtocol, 3, *HandleBuffer, &SimpleFileSystemProtocolGuid, &fileioprot);
-
-  if(fileprotstat != EFI_SUCCESS)
-  {
-    Print(L"Protocol FAILED Load\n");
-  } else
-  {
-    Print(L"Protocol Loaded\n");
-  }
-
-  uefi_call_wrapper(fileioprot->OpenVolume, 2, fileioprot, &fileprot);
-
-  EFI_FILE * file;
-  // open the file
-  EFI_STATUS filefound = uefi_call_wrapper(fileprot->Open, 5, fileprot, &file, name, EFI_FILE_MODE_READ, EFI_FILE_VALID_ATTR);
-
-  if(filefound == EFI_SUCCESS)
-  {
-    Print(L"File Opened\n");
-  }
-
-  // read the file
-
-  UINTN filesize = 0;
-  void * filedata = NULL;
-
-  EFI_STATUS fileloadstatus;
-
-  if((fileloadstatus = uefi_call_wrapper(file->Read, 3, file, filesize, &filedata)) == EFI_BUFFER_TOO_SMALL)
-  {
-    Print(L"Buffer for file too small\n");
-  } else
-  {
-    switch(fileloadstatus)
-    {
-      case EFI_NO_MEDIA:
-        Print(L"No Media\n");
-        break;
-      case EFI_DEVICE_ERROR:
-        Print(L"Device Error\n");
-        break;
-      case EFI_VOLUME_CORRUPTED:
-        Print(L"Volume Corrupted\n");
-        break;
-      case EFI_SUCCESS:
-        Print(L"Loaded correctly ????\n");
-        Print(L"FileSize: %d\n", filesize);
-        break;
-    }
-  }
-
-  filedata = AllocatePool(filesize);
-
-  if(uefi_call_wrapper(file->Read, 3, file, filesize, &filedata) == EFI_SUCCESS)
-  {
-    return filedata;
-  }
-
-  // return a pointer to the file
-
-  // if anything fails return NULL
-  return NULL;
+  return data;
 }
 
