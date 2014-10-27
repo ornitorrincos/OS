@@ -24,10 +24,12 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   
   InitializeLib(ImageHandle, SystemTable);
-   
+  uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut); // clear the screen
+  SetVideoMode(1024, 768, 32);
+
   BS->SetWatchdogTimer(0, 0, 0, NULL);
    
-  uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut); // clear the screen
+
   Print(L"Firmware Vendor: %s Rev: 0x%08x\n", ST->FirmwareVendor, ST->FirmwareRevision);
    
   ELF * kernel = LoadFile(L"kernel.bin");
@@ -39,7 +41,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   EFI_STATUS memst = uefi_call_wrapper(BS->GetMemoryMap, 5, &mapsize, map, &mapkey, &descriptorsize, &version);
 
-  SetVideoMode(1024, 768, 32);
+
 
   if(memst == EFI_BUFFER_TOO_SMALL)
   {
