@@ -35,7 +35,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
    
   ELF * kernel = LoadFile(L"kernel.bin");
 
-  ELF * elfheader = (ELF*)kernel_bin;
+  //ELF * elfheader = (ELF*)kernel_bin;
+  ELF * elfheader = (ELF*)kernel;
 
   PrintELFInfo(elfheader);
 
@@ -96,6 +97,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   *((int*)towrite) = 0xB00B;
 
   //((EFI_PHYSICAL_ADDRESS)kernel_bin) + elfheader->EntryPoint;
+
+  while(1){}
 
   kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel_bin) + elfheader->EntryPoint;
 
