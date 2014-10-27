@@ -1,29 +1,17 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+Repository For the OS
 
-### What is this repository for? ###
+## Components ##
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+### Bootloader ###
 
-### How do I get set up? ###
+It uses a custom bootloader, which is an efi application so it can be loaded by any efi boot manager.
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+### Kernel ###
 
-### Contribution guidelines ###
+The kernel has almost no work done, but it goes in tandem with the bootloader and both are of the AMD64 architecture
 
-* Writing tests
-* Code review
-* Other guidelines
+## Toolchain ##
 
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+Right now it's GCC, but I hope to migrate everything to clang
