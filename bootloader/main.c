@@ -9,7 +9,7 @@
 
 
 extern void BootDisableInterrupts(void);
-typedef void (*kfn)(int dummy);
+typedef void (*kfn)();
 
 void
 EFIAPI
@@ -31,9 +31,9 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut); // clear the screen
   Print(L"Firmware Vendor: %s Rev: 0x%08x\n", ST->FirmwareVendor, ST->FirmwareRevision);
    
-  //ELF * kernel = LoadFile(L"kernel.bin");
+  ELF * kernel = LoadFile(L"kernel.bin");
 
-  //PrintELFInfo(kernel);
+  PrintELFInfo(kernel);
 
   EFI_STATUS memret     = EFI_SUCCESS;
   EFI_STATUS bootstatus = EFI_SUCCESS;
@@ -62,6 +62,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   {
     Print(L"MemoryMap Aquired\n");
   }
+
 
   Print(L"Calling ExitBootServices\n");
 
@@ -94,17 +95,16 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   //((EFI_PHYSICAL_ADDRESS)kernel_bin) + elfheader->EntryPoint;
 
-  ELF * test = (ELF*)kernel_bin;
-  //kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
-  kfn kernel_jump = (void*)(((EFI_PHYSICAL_ADDRESS)kernel_bin) + test->EntryPoint);
+  //ELF * test = (ELF*)kernel_bin;
+  kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
 
   //(*towrite) = (UINT64)kernel;
 
-  kernel_jump(0);
+  kernel_jump();
 
   (*towrite) = (int)0xEEEE;
 
-  //while(1){} // kernel call should go here
+  while(1){} // kernel call should go here
 
   // we should never ever reach this point(if kernel exists, it should shutdown the computer)
 }
