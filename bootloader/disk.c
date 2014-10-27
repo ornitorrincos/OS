@@ -1,7 +1,9 @@
 #include <efi.h>
 #include <efilib.h>
 
-void * LoadFile(CHAR16 * name)
+#include "disk.h"
+
+void * EFIAPI LoadFile(CHAR16 * name)
 {
   EFI_GUID EfiSimpleFileSystemGuid = SIMPLE_FILE_SYSTEM_PROTOCOL;
   EFI_FILE_IO_INTERFACE * FSInterface = NULL;

@@ -3,9 +3,8 @@
 #include <efidef.h>
 
 #include "disk.h"
-
+#include "vga.h"
 #include "ELF.h"
-#include "kernel.h"
 
 
 extern void BootDisableInterrupts(void);
@@ -40,6 +39,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   EFI_STATUS memst = uefi_call_wrapper(BS->GetMemoryMap, 5, &mapsize, map, &mapkey, &descriptorsize, &version);
 
+  SetVideoMode(1024, 768, 32);
+
   if(memst == EFI_BUFFER_TOO_SMALL)
   {
     Print(L"MapSize read successful\n");
@@ -55,6 +56,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   {
     Print(L"Allocated Space for Memory Map\n");
   }
+
+
 
   memst = uefi_call_wrapper(BS->GetMemoryMap, 5, &mapsize, map, &mapkey, &descriptorsize, &version);
 
@@ -93,12 +96,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   int * towrite = (int*)0x150;
   (*towrite) = (int)0xBBBB;
 
-  //((EFI_PHYSICAL_ADDRESS)kernel_bin) + elfheader->EntryPoint;
-
-  //ELF * test = (ELF*)kernel_bin;
   kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
-
-  //(*towrite) = (UINT64)kernel;
 
   kernel_jump();
 

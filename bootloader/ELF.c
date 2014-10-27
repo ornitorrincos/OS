@@ -4,7 +4,7 @@
 #include <efilib.h>
 #include <efidef.h>
 
-void PrintELFInfo(ELF * file)
+void EFIAPI PrintELFInfo(ELF * file)
 {
   if(file->Magic == ELFMAGIC)
   {

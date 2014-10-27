@@ -3,6 +3,6 @@
 
 #include <efidef.h>
 
-void * LoadFile(CHAR16 * name);
+void * EFIAPI LoadFile(CHAR16 * name);
 
 #endif // DISK_H

@@ -15,7 +15,6 @@ qtcAddDeployment()
 
 HEADERS += \
     ELF.h \
-    kernel.h \
     disk.h \
     vga.h
 

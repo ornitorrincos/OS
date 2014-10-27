@@ -34,6 +34,6 @@ typedef struct ELF
   UINT16 Shstrndx;
 } ELF;
 
-void PrintELFInfo(ELF * file);
+void EFIAPI PrintELFInfo(ELF * file);
 
 #endif
