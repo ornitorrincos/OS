@@ -15,7 +15,7 @@ typedef struct _Pixel
   UINT8 R;
   UINT8 G;
   UINT8 B;
-  UINT8 Z;
+  //UINT8 Z;
 } Pixel;
 
 void
@@ -35,23 +35,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut); // clear the screen
   Pixel * fb = SetVideoMode(1024, 768, 32);
 
-  int i = 0;
-  int j = 0;
 
-
-
-  for(i = 0; i < 256; ++i)
-  {
-    for(j = 0; j < 256; ++j)
-    {
-      Pixel p;
-      p.R = 255;
-      p.G = 255;
-      p.B = 255;
-      p.Z = 255;
-      fb[j + 1024*i] = p;
-    }
-  }
 
   BS->SetWatchdogTimer(0, 0, 0, NULL);
    
@@ -120,6 +104,63 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   SetCrc(&(SystemTable->Hdr)); // As we exited boot services we need to set the CRC32 again
 
   BootDisableInterrupts();
+
+  // test pattern
+  int i = 0;
+  int j = 0;
+
+  for(i = 0; i < 768; ++i)
+  {
+    for(j = 0; j < 256; ++j)
+    {
+      Pixel p;
+      p.R = 255;
+      p.G = 0;
+      p.B = 0;
+      //p.Z = 255;
+      fb[j + 1024*i] = p;
+    }
+  //}
+
+  //for(i = 0; i < 256; ++i)
+  {
+    for(j = 256; j < 512; ++j)
+    {
+      Pixel p;
+      p.R = 0;
+      p.G = 255;
+      p.B = 0;
+      //p.Z = 255;
+      fb[j + 1024*i] = p;
+    }
+  }
+
+  //for(i = 0; i < 256; ++i)
+  {
+    for(j = 512; j < (512+256); ++j)
+    {
+      Pixel p;
+      p.R = 0;
+      p.G = 0;
+      p.B = 255;
+      //p.Z = 255;
+      fb[j + 1024*i] = p;
+    }
+  }
+
+  //for(i = 0; i < 256; ++i)
+  //{
+    for(j = (512+256); j < 1024; ++j)
+    {
+      Pixel p;
+      p.R = 255;
+      p.G = 255;
+      p.B = 255;
+      //p.Z = 255;
+      fb[j + 1024*i] = p;
+    }
+  }
+
 
   int * towrite = (int*)0x150;
   (*towrite) = (int)0xBBBB;
