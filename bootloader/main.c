@@ -10,6 +10,14 @@
 extern void BootDisableInterrupts(void);
 typedef void (*kfn)();
 
+typedef struct _Pixel
+{
+  UINT8 R;
+  UINT8 G;
+  UINT8 B;
+  UINT8 Z;
+} Pixel;
+
 void
 EFIAPI
 efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
@@ -25,7 +33,25 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   
   InitializeLib(ImageHandle, SystemTable);
   uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut); // clear the screen
-  SetVideoMode(1024, 768, 32);
+  Pixel * fb = SetVideoMode(1024, 768, 32);
+
+  int i = 0;
+  int j = 0;
+
+
+
+  for(i = 0; i < 256; ++i)
+  {
+    for(j = 0; j < 256; ++j)
+    {
+      Pixel p;
+      p.R = 255;
+      p.G = 255;
+      p.B = 255;
+      p.Z = 255;
+      fb[j + 1024*i] = p;
+    }
+  }
 
   BS->SetWatchdogTimer(0, 0, 0, NULL);
    
