@@ -18,6 +18,18 @@ typedef struct _Pixel
   //UINT8 Z;
 } Pixel;
 
+typedef struct _OSDATA
+{
+  UINT32 Magic;
+
+  UINT32 FBWidth;
+  UINT32 FBHeight;
+  UINT32 PixelSize;
+  void * FBAddr;
+
+  void * RAMDisk;
+} OSDATA;
+
 void
 EFIAPI
 efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
@@ -104,7 +116,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   SetCrc(&(SystemTable->Hdr)); // As we exited boot services we need to set the CRC32 again
 
   BootDisableInterrupts();
-
+/*
   // test pattern
   int i = 0;
   int j = 0;
@@ -159,8 +171,17 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
       //p.Z = 255;
       fb[j + 1024*i] = p;
     }
-  }
+  }*/
 
+
+  OSDATA * osdata = (OSDATA*)(640*1024);
+
+  osdata->Magic = 0xDDEE;
+  osdata->FBWidth = 2014;
+  osdata->FBHeight = 768;
+  osdata->FBAddr = fb;
+  osdata->PixelSize = 24;
+  osdata->RAMDisk = NULL;
 
   int * towrite = (int*)0x150;
   (*towrite) = (int)0xBBBB;
