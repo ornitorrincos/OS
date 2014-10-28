@@ -8,7 +8,8 @@ INCLUDEPATH += /usr/include/efi
 SOURCES += main.c misc.s \
     disk.c \
     ELF.c \
-    vga.c
+    vga.c \
+    vmmem.c
 
 include(deployment.pri)
 qtcAddDeployment()
@@ -16,5 +17,6 @@ qtcAddDeployment()
 HEADERS += \
     ELF.h \
     disk.h \
-    vga.h
+    vga.h \
+    vmmem.h
 

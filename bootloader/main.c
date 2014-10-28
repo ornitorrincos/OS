@@ -4,6 +4,7 @@
 
 #include "disk.h"
 #include "vga.h"
+#include "vmmem.h"
 #include "ELF.h"
 
 
@@ -26,6 +27,8 @@ typedef struct _OSDATA
   UINT32 FBHeight;
   UINT32 PixelSize;
   void * FBAddr;
+
+  void * MEMMap;
 
   void * RAMDisk;
 } OSDATA;
@@ -115,6 +118,46 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   SetCrc(&(SystemTable->Hdr)); // As we exited boot services we need to set the CRC32 again
 
+  if(SetVM(mapsize, descriptorsize, version, map) != EFI_SUCCESS)
+  {
+    int i = 0;
+    int j = 0;
+
+    for(i = 0; i < 256; ++i)
+    {
+      for(j = 0; j < 256; ++j)
+      {
+        Pixel p;
+        p.R = 255;
+        p.G = 0;
+        p.B = 0;
+        //p.Z = 255;
+        fb[j + 1024*i] = p;
+      }
+    }
+  } else
+  {
+    int i = 0;
+    int j = 0;
+
+    for(i = 0; i < 256; ++i)
+    {
+      for(j = 0; j < 256; ++j)
+      {
+        Pixel p;
+        p.R = 0;
+        p.G = 255;
+        p.B = 0;
+        //p.Z = 255;
+        fb[j + 1024*i] = p;
+      }
+    }
+  }
+
+  // we should now set soe virtual mapping
+
+
+
   BootDisableInterrupts();
 /*
   // test pattern
@@ -183,14 +226,9 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   osdata->PixelSize = 24;
   osdata->RAMDisk = NULL;
 
-  int * towrite = (int*)0x150;
-  (*towrite) = (int)0xBBBB;
-
   kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
 
   kernel_jump();
-
-  (*towrite) = (int)0xEEEE;
 
   while(1){} // kernel call should go here
 

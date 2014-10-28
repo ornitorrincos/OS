@@ -1,6 +1,9 @@
 #ifndef VGA_H
 #define VGA_H
 
+#include <efi.h>
+#include <efilib.h>
+
 typedef struct _FBinfo
 {
   int width;

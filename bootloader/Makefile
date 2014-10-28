@@ -2,7 +2,7 @@ CC = gcc-4.8.3
 
 ARCH            = $(shell uname -m | sed s,i[3456789]86,ia32,)
 
-OBJS            = main.o misc.o ELF.o disk.o vga.o
+OBJS            = main.o misc.o ELF.o disk.o vga.o vmmem.o
 TARGET          = hello.efi
 
 EFIINC          = /usr/include/efi
