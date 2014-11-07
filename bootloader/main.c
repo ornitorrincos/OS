@@ -7,10 +7,6 @@
 #include "vmmem.h"
 #include "ELF.h"
 
-
-extern void BootDisableInterrupts(void);
-typedef void (*kfn)();
-
 typedef struct _Pixel
 {
   UINT8 R;
@@ -32,6 +28,10 @@ typedef struct _OSDATA
 
   void * RAMDisk;
 } OSDATA;
+
+extern void BootDisableInterrupts(void);
+typedef void (*kfn)(OSDATA *);
+
 
 void
 EFIAPI
@@ -57,6 +57,13 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   Print(L"Firmware Vendor: %s Rev: 0x%08x\n", ST->FirmwareVendor, ST->FirmwareRevision);
    
+  OSDATA * osdata = AllocatePool(sizeof(OSDATA));
+
+  if(osdata == NULL)
+  {
+    Print(L"Os Data allocation faisled\n");
+  }
+
   ELF * kernel = LoadFile(L"kernel.bin");
 
   PrintELFInfo(kernel);
@@ -65,7 +72,6 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   EFI_STATUS bootstatus = EFI_SUCCESS;
 
   EFI_STATUS memst = uefi_call_wrapper(BS->GetMemoryMap, 5, &mapsize, map, &mapkey, &descriptorsize, &version);
-
 
 
   if(memst == EFI_BUFFER_TOO_SMALL)
@@ -155,13 +161,13 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   }
 
   // we should now set soe virtual mapping
-  BootDisableInterrupts();
+  //BootDisableInterrupts();
 
 
-  OSDATA * osdata = (OSDATA*)(640*1024);
+  //OSDATA * osdata = (OSDATA*)(640*1024);
 
   osdata->Magic = 0xDDEE;
-  osdata->FBWidth = 2014;
+  osdata->FBWidth = 1024;
   osdata->FBHeight = 768;
   osdata->FBAddr = fb;
   osdata->PixelSize = 24;
@@ -169,7 +175,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
 
-  kernel_jump();
+  kernel_jump(osdata);
 
   while(1){} // kernel call should go here
 
