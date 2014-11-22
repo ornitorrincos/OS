@@ -2,6 +2,18 @@
 #include <efilib.h>
 
 #include "disk.h"
+#include "memory.h"
+
+UINTN EFIAPI ceil2(float x)
+{
+  UINTN ret = x;
+  if (x - (int)x > 0) {
+      x += 1;
+      ret = (int)x;
+  }
+
+  return ret;
+}
 
 void * EFIAPI LoadFile(CHAR16 * name)
 {
@@ -27,6 +39,8 @@ void * EFIAPI LoadFile(CHAR16 * name)
 
   EFI_STATUS openstat = uefi_call_wrapper(fsroot->Open, 5, fsroot, &fp, name, (UINT64)1, (UINT64)1);
 
+
+
   if(openstat != EFI_SUCCESS)
   {
     Print(L"Failed opening the file\n");
@@ -51,8 +65,19 @@ void * EFIAPI LoadFile(CHAR16 * name)
   void * data = NULL;
 
   //data = AllocatePool(size);
-  EFI_STATUS allocstatus = uefi_call_wrapper(BS->AllocatePool, 3, EfiLoaderData, size, (void**)&data);
+  //EFI_STATUS allocstatus = uefi_call_wrapper(BS->AllocatePool, 3, EfiLoaderData, size, (void**)&data);
+  float pages = (size/1024)/4;
 
+  UINTN ipages = ceil2(pages);
+  EFI_PHYSICAL_ADDRESS tmp;
+
+  EFI_STATUS allocstatus = uefi_call_wrapper(BS->AllocatePages, 4, AllocateAnyPages, EfiLoaderData, ipages, &tmp);
+
+  data = (void*)tmp;
+
+  //data = AllocatePages2(size);
+
+  //if(data == NULL)
   if(allocstatus != EFI_SUCCESS)
   {
     Print(L"Failed to get Kernel memory\n");

@@ -124,7 +124,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   SetCrc(&(SystemTable->Hdr)); // As we exited boot services we need to set the CRC32 again
 
-  if(SetVM(mapsize, descriptorsize, version, map) != EFI_SUCCESS)
+  if(SetVM(mapsize, descriptorsize, version, map, kernel) != EFI_SUCCESS)
   {
     int i = 0;
     int j = 0;

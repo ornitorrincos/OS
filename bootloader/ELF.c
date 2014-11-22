@@ -21,8 +21,6 @@ void EFIAPI PrintELFInfo(ELF * file)
     Print(L"System V ABI\n");
   }
 
-  int * towrite = (int*)0x200;
-  (*towrite) = (UINT64)file;
   Print(L"LoadAddress: 0x%x\n", file);
   Print(L"Kernel Entry Point: 0x%x\n", file->EntryPoint);
 
