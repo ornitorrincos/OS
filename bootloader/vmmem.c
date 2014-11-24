@@ -23,21 +23,17 @@ EFI_STATUS EFIAPI SetVM(IN UINTN size, IN UINTN descriptorsize, IN UINTN descrip
     if(tmp->PhysicalStart == (EFI_PHYSICAL_ADDRESS)kernel)
     {
       tmp->VirtualStart = vkernel;
-      tmp->Type |= EFI_MEMORY_RUNTIME;
-      break;
+      tmp->Attribute |= EFI_MEMORY_RUNTIME;
+      goto setvm; // to force exiting the loop, our job here is finished
     }
 
     tmp = (EFI_MEMORY_DESCRIPTOR*)(((EFI_PHYSICAL_ADDRESS)tmp + descriptorsize));
   }
+  // if we finish the loop it means that we never found the kernel
+  return -1;
 
-  // kernel not found
-  if(i >= elements)
-  {
-    return -1;
-  }
 
+  setvm:
   return uefi_call_wrapper(RT->SetVirtualAddressMap, 4, size, descriptorsize, descriptorversion, map);
-
-  //return EFI_SUCCESS;
 }
 

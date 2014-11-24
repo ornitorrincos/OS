@@ -10,9 +10,9 @@
 
 typedef struct _Pixel
 {
-  UINT8 R;
-  UINT8 G;
   UINT8 B;
+  UINT8 G;
+  UINT8 R;
   //UINT8 Z;
 } Pixel;
 
@@ -173,6 +173,9 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   osdata->FBAddr = fb;
   osdata->PixelSize = 24;
   osdata->RAMDisk = NULL;
+
+  while(1){} // kernel call should go here
+  kernel = (ELF*)0x280000000;
 
   kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
 
