@@ -36,8 +36,8 @@ EFI_STATUS EFIAPI SetVM(IN UINTN size, IN UINTN descriptorsize, IN UINTN descrip
     return -1;
   }
 
-  /*return */uefi_call_wrapper(RT->SetVirtualAddressMap, 4, size, descriptorsize, descriptorversion, map);
+  return uefi_call_wrapper(RT->SetVirtualAddressMap, 4, size, descriptorsize, descriptorversion, map);
 
-  return EFI_SUCCESS;
+  //return EFI_SUCCESS;
 }
 

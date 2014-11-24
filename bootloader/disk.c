@@ -15,7 +15,7 @@ UINTN EFIAPI ceil2(float x)
   return ret;
 }
 
-void * EFIAPI LoadFile(CHAR16 * name)
+void * EFIAPI LoadFile(CHAR16 * name, UINTN memtype)
 {
   EFI_GUID EfiSimpleFileSystemGuid = SIMPLE_FILE_SYSTEM_PROTOCOL;
   EFI_FILE_IO_INTERFACE * FSInterface = NULL;
@@ -71,7 +71,7 @@ void * EFIAPI LoadFile(CHAR16 * name)
   UINTN ipages = ceil2(pages);
   EFI_PHYSICAL_ADDRESS tmp;
 
-  EFI_STATUS allocstatus = uefi_call_wrapper(BS->AllocatePages, 4, AllocateAnyPages, EfiLoaderData, ipages, &tmp);
+  EFI_STATUS allocstatus = uefi_call_wrapper(BS->AllocatePages, 4, AllocateAnyPages, memtype, ipages, &tmp);
 
   data = (void*)tmp;
 

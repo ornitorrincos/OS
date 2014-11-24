@@ -20,5 +20,6 @@ HEADERS += \
     disk.h \
     vga.h \
     vmmem.h \
-    memory.h
+    memory.h \
+    memorytypes.h
 

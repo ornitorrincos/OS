@@ -1,6 +1,6 @@
 #include "memory.h"
 
-UINTN EFIAPI ceil(float IN x)
+UINTN EFIAPI ceil(IN float x)
 {
   UINTN ret = x,;
   if (x - (int)x > 0) {
@@ -11,7 +11,7 @@ UINTN EFIAPI ceil(float IN x)
   return ret;
 }
 
-void * EFIAPI AllocatePages2(UINTN IN size)
+void * EFIAPI AllocatePages2(IN UINTN size)
 {
   float pages = (size/1024)/4;
 

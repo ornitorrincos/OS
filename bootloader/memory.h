@@ -4,6 +4,6 @@
 #include <efi.h>
 #include <efilib.h>
 
-void * EFIAPI AllocatePages2(UINTN IN size);
+void * EFIAPI AllocatePages2(IN UINTN size);
 
 #endif

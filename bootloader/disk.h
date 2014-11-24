@@ -3,6 +3,6 @@
 
 #include <efidef.h>
 
-void * EFIAPI LoadFile(CHAR16 * name);
+void * EFIAPI LoadFile(CHAR16 * name, UINTN memtype);
 
 #endif // DISK_H

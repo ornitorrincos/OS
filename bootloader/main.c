@@ -6,6 +6,7 @@
 #include "vga.h"
 #include "vmmem.h"
 #include "ELF.h"
+#include "memorytypes.h"
 
 typedef struct _Pixel
 {
@@ -64,7 +65,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     Print(L"Os Data allocation faisled\n");
   }
 
-  ELF * kernel = LoadFile(L"kernel.bin");
+  ELF * kernel = LoadFile(L"kernel.bin", MEM_KERNEL); // we set the memory type to the one from the kernel
 
   PrintELFInfo(kernel);
 

@@ -1,0 +1,11 @@
+#ifndef MEMORYTYPES_H
+#define MEMORYTYPES_H
+
+#include <efi.h>
+#include <efilib.h>
+
+UINTN MEM_KERNEL  = 0x80000010;
+UINTN MEM_RAMDISK = 0x80000020;
+UINTN MEM_ARGS    = 0x80000030;
+
+#endif // MEMORYTYPES_H
