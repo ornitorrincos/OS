@@ -21,5 +21,6 @@ HEADERS += \
     vga.h \
     vmmem.h \
     memory.h \
-    memorytypes.h
+    memorytypes.h \
+    paging_struct.h
 
