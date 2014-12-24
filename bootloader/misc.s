@@ -1,13 +1,19 @@
-.intel_syntax
-
 .text
 .global BootDisableInterrupts
-.global KernelJump
+.global GetVMCPUID
 
 BootDisableInterrupts:
+  pushq %rbp
+  movq %rsp, %rbp
   cli
+  popq %rbp
   ret
 
-
-.att_syntax
+GetVMCPUID:
+  pushq %rbp
+  movq %rsp, %rbp
+  movq 0x80000008, %rax
+  cpuid
+  popq %rbp
+  ret
 

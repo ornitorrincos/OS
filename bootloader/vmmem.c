@@ -1,8 +1,20 @@
 #include "vmmem.h"
 
+#include "paging_struct.h"
+
+// might need to cast t into an int64?
+// that's the size it has anyways
+void EFIAPI SetCR3(CR3 t)
+{
+  //asm("mov t, %cr3"); // need to look better at inline asm
+}
+
 EFI_STATUS EFIAPI SetVM(IN UINTN size, IN UINTN descriptorsize, IN UINTN descriptorversion, EFI_MEMORY_DESCRIPTOR * map, void * kernel)
 {
-  // edit the mapping
+
+  // the code for setting up paging should go here
+
+  // edit the memory mapping so that the uefi runtime knows about it
 
   EFI_MEMORY_DESCRIPTOR * tmp = map;
 
@@ -24,16 +36,17 @@ EFI_STATUS EFIAPI SetVM(IN UINTN size, IN UINTN descriptorsize, IN UINTN descrip
     {
       tmp->VirtualStart = vkernel;
       tmp->Attribute |= EFI_MEMORY_RUNTIME;
-      goto setvm; // to force exiting the loop, our job here is finished
     }
 
     tmp = (EFI_MEMORY_DESCRIPTOR*)(((EFI_PHYSICAL_ADDRESS)tmp + descriptorsize));
   }
-  // if we finish the loop it means that we never found the kernel
-  return -1;
 
+  if(i == elements)
+  {
+    // if we finish the loop it means that we never found the kernel
+    return -1;
+  }
 
-  setvm:
   return uefi_call_wrapper(RT->SetVirtualAddressMap, 4, size, descriptorsize, descriptorversion, map);
 }
 

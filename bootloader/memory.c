@@ -1,5 +1,7 @@
 #include "memory.h"
 
+// Currently deqad code, might repurpose it to allow for different memory types
+
 UINTN EFIAPI ceil(IN float x)
 {
   UINTN ret = x,;

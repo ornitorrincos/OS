@@ -1,4 +1,4 @@
-CC = gcc-4.8.3
+#CC = gcc-4.8.3
 
 ARCH            = $(shell uname -m | sed s,i[3456789]86,ia32,)
 

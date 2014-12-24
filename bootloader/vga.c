@@ -5,6 +5,7 @@
 
 void * EFIAPI SetVideoMode(int width, int height, int bitdepth)
 {
+  // find the location of the Graphics Output protocol to aquire a linear framebuffer
   EFI_GUID EfiGOPGuid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
 
   struct _EFI_GRAPHICS_OUTPUT_PROTOCOL * Graphics = NULL;
@@ -18,6 +19,7 @@ void * EFIAPI SetVideoMode(int width, int height, int bitdepth)
     Print(L"Failed to locate GOP\n");
   }
 
+  // we now search for a 1024x768 mode with a bit depth of 32bits
   EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE * GOPMode;
 
   EFI_GRAPHICS_OUTPUT_MODE_INFORMATION * GOPInfo = NULL;
@@ -32,17 +34,7 @@ void * EFIAPI SetVideoMode(int width, int height, int bitdepth)
 
   Print(L"Size of GOP Info: %d\n", infosize);
 
-  //GOPInfo = AllocatePool(infosize);
-
-  /*if(GOPMode != NULL)
-  {
-    Print(L"Total Modes: %d\n", GOPMode->MaxMode);
-    Print(L"Width: %d Height: %d\n", GOPMode->Info->HorizontalResolution, GOPMode->Info->VerticalResolution);
-  }*/
-
-  //uefi_call_wrapper(Graphics->SetMode, 2, Graphics, 2); // hardcoded to mode 2(1024x768)
-  //uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut); // clear the screen
-
+  // print information about the available modes
   UINT32 i;
   for(i = 0; i < MaxModes; ++i)
   {
@@ -60,7 +52,7 @@ void * EFIAPI SetVideoMode(int width, int height, int bitdepth)
         Print(L"By Mask\n");
         break;
       case PixelBltOnly:
-        Print(L"Only Blt\n");
+        Print(L"Only Blt\n"); // this mode doesn't expose a linear framebuffer
       default:
         Print(L"Unknown\n");
         break;
@@ -69,7 +61,7 @@ void * EFIAPI SetVideoMode(int width, int height, int bitdepth)
 
   }
 
-  uefi_call_wrapper(Graphics->SetMode, 2, Graphics, 2); // hardcoded to mode 2(1024x768)
+  uefi_call_wrapper(Graphics->SetMode, 2, Graphics, 2); // hardcoded to mode 2(1024x768), this is only tue for the cirrus vga that qemu exposes
   uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut); // clear the screen
   //uefi_call_wrapper(Graphics->QueryMode, 4, Graphics, i, &infosize, &GOPInfo);
   Print(L"Width: %d Height: %d\n", Graphics->Mode->Info->HorizontalResolution, Graphics->Mode->Info->VerticalResolution);

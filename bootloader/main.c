@@ -7,7 +7,9 @@
 #include "vmmem.h"
 #include "ELF.h"
 #include "memorytypes.h"
+#include "paging_struct.h"
 
+// pixel struct information(hardcoded to what qemu exposes)
 typedef struct _Pixel
 {
   UINT8 B;
@@ -16,22 +18,23 @@ typedef struct _Pixel
   //UINT8 Z;
 } Pixel;
 
+// struct that is going to be passed to the kernel about general system information
 typedef struct _OSDATA
 {
-  UINT32 Magic;
+  UINT32 Magic; // magic number to check
 
-  UINT32 FBWidth;
-  UINT32 FBHeight;
-  UINT32 PixelSize;
-  void * FBAddr;
+  UINT32 FBWidth; // with of the framebuffer
+  UINT32 FBHeight; // height
+  UINT32 PixelSize; // size of each pixel(an rgb pixel might have a bigger size)
+  void * FBAddr; // address of the linear framebuffer
 
-  void * MEMMap;
+  void * MEMMap; // pointer to the system memory map
 
-  void * RAMDisk;
+  void * RAMDisk; // pointer to a ramdisk loaded from the hdd
 } OSDATA;
 
-extern void BootDisableInterrupts(void);
-typedef void (*kfn)(OSDATA *);
+extern void BootDisableInterrupts(void); // asm code is not correct(callee doesn't set the stack correctly)
+typedef void (*kfn)(OSDATA *);  // typedef to setup the entry point of the kernel and do a "jump" into it
 
 
 void
@@ -52,23 +55,38 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   Pixel * fb = SetVideoMode(1024, 768, 32);
 
 
-
+  // some uefi implementations time out with their default setting, disable the timer
   BS->SetWatchdogTimer(0, 0, 0, NULL);
    
 
   Print(L"Firmware Vendor: %s Rev: 0x%08x\n", ST->FirmwareVendor, ST->FirmwareRevision);
    
+  UINT64 cpu = GetVMCPUID();
+
+  CPUIDsizes * sizes = (CPUIDsizes*)&cpu;
+
+  Print(L"raw: %x\n", cpu);
+  Print(L"Physical: %d\n", sizes->PhysicalAddress);
+  Print(L"Virtual: %d\n", sizes->VirtualAddress);
+
+  //while(1){};
+
+  // allocate the datat for the kernel(need to specify memory time not to be a generic loader data type)
   OSDATA * osdata = AllocatePool(sizeof(OSDATA));
 
   if(osdata == NULL)
   {
-    Print(L"Os Data allocation faisled\n");
+    Print(L"Os Data allocation failed\n");
   }
 
   ELF * kernel = LoadFile(L"kernel.bin", MEM_KERNEL); // we set the memory type to the one from the kernel
 
+  // print general information about the kernel elf header
   PrintELFInfo(kernel);
 
+
+  // attempt to allocate the memory map, first try is going to be too small
+  // as such the firmware will return the correct size
   EFI_STATUS memret     = EFI_SUCCESS;
   EFI_STATUS bootstatus = EFI_SUCCESS;
 
@@ -80,6 +98,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     Print(L"MapSize read successful\n");
   }
 
+  // as the allocation will probably modify the memory map allocate 4kb more(one page)
+  // so that the new memory map probably fits
   allocsize = mapsize + 10*4098;
 
   mapsize = allocsize;
@@ -101,10 +121,13 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   }
 
 
+  // the call to exit boot services tells the firmware we are ready to take control of the system
   Print(L"Calling ExitBootServices\n");
 
   // never ever call Print after the next line
-  // after the first call boot services are partially disabled
+  // after the first call boot services can be partially disabled
+  // loop until the firmware reports a successful exit, the specification allows for partial shutdowns
+  // so more than one call might be necessary(on qemu with OVMF it is)
   while((bootstatus = uefi_call_wrapper(BS->ExitBootServices, 2, ImageHandle, mapkey)) != EFI_SUCCESS)
   {
 
@@ -125,6 +148,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   SetCrc(&(SystemTable->Hdr)); // As we exited boot services we need to set the CRC32 again
 
+  // as we can't print to the screen the way of showing the return status of this function
+  // is to write a red or green square on the top left corner of the screen
   if(SetVM(mapsize, descriptorsize, version, map, kernel) != EFI_SUCCESS)
   {
     int i = 0;
@@ -174,14 +199,17 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   osdata->PixelSize = 24;
   osdata->RAMDisk = NULL;
 
-  while(1){} // kernel call should go here
-  kernel = (ELF*)0x280000000;
+  // this while only serves not to call the kernel for now
+  // after calling exit boot services we can't return to the uefi environment because it's been destroyed
+  while(1){}
+
+  kernel = (ELF*)0x280000000; // actually incorrect virtual pointer
 
   kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
 
   kernel_jump(osdata);
 
-  while(1){} // kernel call should go here
+  while(1){} // sanity in case the kernel exists, should throw an error somehow
 
   // we should never ever reach this point(if kernel exists, it should shutdown the computer)
 }

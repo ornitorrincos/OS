@@ -17,6 +17,7 @@ UINTN EFIAPI ceil2(float x)
 
 void * EFIAPI LoadFile(CHAR16 * name, UINTN memtype)
 {
+  // ask for the protocol to handle the filesystem
   EFI_GUID EfiSimpleFileSystemGuid = SIMPLE_FILE_SYSTEM_PROTOCOL;
   EFI_FILE_IO_INTERFACE * FSInterface = NULL;
   struct _EFI_FILE_HANDLE * fsroot = NULL;
@@ -47,6 +48,9 @@ void * EFIAPI LoadFile(CHAR16 * name, UINTN memtype)
   }
 
 
+  // even if the specification says that asking to open the file with insuficient memory
+  // reports the full file size, qemu and virtualbox implementations don't do that
+  // as such we need to get manually the file info
   UINTN infosize = 1024;
   EFI_FILE_INFO * info = AllocatePool(infosize);
   EFI_GUID infoguid = EFI_FILE_INFO_ID;

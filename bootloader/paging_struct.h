@@ -1,11 +1,22 @@
 #ifndef PAGING_STRUCT_H
 #define PAGING_STRUCT_H
 
-typedef unsigned char uchar; // need to replace this for other more sensible thing or location
+#include <efi.h>
+#include <efilib.h>
+
+typedef UINT64 uchar; // need to replace this for other more sensible thing or location
+
+UINT64 GetVMCPUID(); // implemented in misc.s
+
+typedef struct _CPUIDsizes
+{
+  UINT64 PhysicalAddress:8;
+  UINT64 VirtualAddress:8;
+  UINT64 Padding:48;
+} CPUIDsizes;
 
 // these entries are for 4KB pages
 
-// virtual address pointer structure:
 
 //                                Virtual pointer bits breakdown
 //    +---------------+-------------+------------+-----------+-----------+-----------------------+
@@ -13,6 +24,8 @@ typedef unsigned char uchar; // need to replace this for other more sensible thi
 //    +---------------+-------------+------------+-----------+-----------+-----------------------+
 //    |   sign extend | PML4 offset | PDP offset | PD offset | PT offset | physical page offset  |
 //    +---------------+-------------+------------+-----------+-----------+-----------------------+
+
+
 // paging structure:
 
 // CR3
@@ -20,8 +33,8 @@ typedef unsigned char uchar; // need to replace this for other more sensible thi
 typedef struct _CR3
 {
   uchar reserved1:3;
-  uchar PWT:1;
-  uchar PCD:1;
+  uchar PWT:1;        // page level writethough
+  uchar PCD:1;        // page level cache disable
   uchar reserved2:7;
   uchar base_addr:40; // base address to the table of PML4 entries
   uchar reserved3:13;
@@ -31,18 +44,18 @@ typedef struct _CR3
 
 typedef struct _PML4E
 {
-  uchar P:1;
-  uchar RW:1;
-  uchar US:1;
-  uchar PWT:1;
-  uchar PCD:1;
-  uchar A:1;
+  uchar P:1; // present bit
+  uchar RW:1; // read write (if 0 write protected)
+  uchar US:1; // user/supervisor if 0 no user mode access
+  uchar PWT:1; // page level write though
+  uchar PCD:1; // page level cache disable
+  uchar A:1; // accesed
   uchar ignored:1;
   uchar MBZ:2;
   uchar AVL:3;
-  uchar PDPBA:40;
+  uchar PDPBA:40; // physical address of the table pointed by this entry
   uchar available:11; // need to look into what values go here
-  uchar NX:1;
+  uchar NX:1; // execute disable
 } PML4E;
 
 // PDPE
