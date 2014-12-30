@@ -4,6 +4,8 @@
 #include <efi.h>
 #include <efilib.h>
 
-void * EFIAPI AllocatePages2(IN UINTN size);
+#include "memorytypes.h"
+
+void * EFIAPI AllocatePagesType(IN UINTN size, IN UINTN type);
 
 #endif

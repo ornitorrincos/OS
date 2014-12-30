@@ -36,6 +36,20 @@ typedef struct _OSDATA
 extern void BootDisableInterrupts(void); // asm code is not correct(callee doesn't set the stack correctly)
 typedef void (*kfn)(OSDATA *);  // typedef to setup the entry point of the kernel and do a "jump" into it
 
+UINT64 EFIAPI GetVMCPUID()
+{
+  long out = 0;
+  long id = 0x80000008;
+
+  __asm__("movq %1, %%rax;"
+          "cpuid;"
+          "movq %%rax, %0;"
+          :"=r"(out)
+          :"r"(id)
+          );
+
+  return out;
+}
 
 void
 EFIAPI
@@ -69,7 +83,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   Print(L"Physical: %d\n", sizes->PhysicalAddress);
   Print(L"Virtual: %d\n", sizes->VirtualAddress);
 
-  //while(1){};
+  while(1){};
 
   // allocate the datat for the kernel(need to specify memory time not to be a generic loader data type)
   OSDATA * osdata = AllocatePool(sizeof(OSDATA));
@@ -203,13 +217,13 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   // after calling exit boot services we can't return to the uefi environment because it's been destroyed
   while(1){}
 
-  kernel = (ELF*)0x280000000; // actually incorrect virtual pointer
+  kernel = (ELF*)0x280000000; // correct virtual pointer to 10GB (Sign: 0  PML4: 0  PDP:10  PD:0  Page:0)
 
   kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
 
   kernel_jump(osdata);
 
-  while(1){} // sanity in case the kernel exists, should throw an error somehow
+  __asm__("hlt"); // sanity in case the kernel exists, should throw an error somehow
 
   // we should never ever reach this point(if kernel exists, it should shutdown the computer)
 }
