@@ -83,7 +83,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   Print(L"Physical: %d\n", sizes->PhysicalAddress);
   Print(L"Virtual: %d\n", sizes->VirtualAddress);
 
-  while(1){};
+  //while(1){};
 
   // allocate the datat for the kernel(need to specify memory time not to be a generic loader data type)
   OSDATA * osdata = AllocatePool(sizeof(OSDATA));
@@ -221,9 +221,13 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
 
+  // disable interrupts
+  __asm__("cli");
+
   kernel_jump(osdata);
 
   __asm__("hlt"); // sanity in case the kernel exists, should throw an error somehow
+  // not as if the kernel shouldn't have this same code at the end of the main though
 
   // we should never ever reach this point(if kernel exists, it should shutdown the computer)
 }

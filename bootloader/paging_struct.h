@@ -38,7 +38,7 @@ typedef struct _CR3
   uchar reserved2:7;
   uchar base_addr:40; // base address to the table of PML4 entries
   uchar reserved3:13;
-} CR3;
+} s_CR3;
 
 // PML4E
 
@@ -56,7 +56,7 @@ typedef struct _PML4E
   uchar PDPBA:40; // physical address of the table pointed by this entry
   uchar available:11; // need to look into what values go here
   uchar NX:1; // execute disable
-} PML4E;
+} s_PML4E;
 
 // PDPE
 
@@ -75,7 +75,7 @@ typedef struct _PDPE
   uchar PDBA:40;
   uchar available:11;
   uchar NX:1;
-} PDPE;
+} s_PDPE;
 
 // PDE
 
@@ -94,7 +94,7 @@ typedef struct _PDE
   uchar PTBA:40;
   uchar available:11;
   uchar NX:1;
-} PDE;
+} s_PDE;
 
 // PTE
 
@@ -113,7 +113,39 @@ typedef struct _PTE
   uchar PPBA:40;
   uchar available:11;
   uchar NX:1;
-} PTE;
+} s_PTE;
+
+// unions
+
+union CR3
+{
+  s_CR3 bits;
+  long value;
+};
+
+union PML4E
+{
+  s_PML4E bits;
+  long value;
+};
+
+union PDPE
+{
+  s_PDPE bits;
+  long value;
+};
+
+union PDE
+{
+  s_PDE bits;
+  long value;
+};
+
+union PTE
+{
+  s_PTE bits;
+  long value;
+};
 
 #endif // PAGING_STRUCT_H
 
