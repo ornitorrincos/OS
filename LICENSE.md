@@ -1,4 +1,4 @@
-Copyright (c) 2015, Imanol Celaya <>
+Copyright (c) 2015, Imanol Celaya <imanol@celaya.me>
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
