@@ -1,6 +1,6 @@
 #include "elfinfoprint.h"
 
-#include <stdio.h>
+#include "bootloader_compat.h"
 
 
 bool IsElf(Elf64_Ehdr * header)
@@ -31,20 +31,20 @@ void ElfInfoPrint(Elf64_Ehdr * header)
   // check if actual elf file
   if(!IsElf(header))
   {
-    printf("Not an ELF File\n");
+    Print(L"Not an ELF File\n");
   }
 
   if(header->e_type == ET_EXEC)
   {
-    printf("Executable file\n");
+    Print(L"Executable file\n");
   }
 
   if(header->e_machine == EM_X86_64)
   {
-    printf("AMD64 Machine\n");
+    Print(L"AMD64 Machine\n");
   } else
   {
-    printf("Unrecorginzed Machine\n");
+    Print(L"Unrecorginzed Machine\n");
   }
 
 }

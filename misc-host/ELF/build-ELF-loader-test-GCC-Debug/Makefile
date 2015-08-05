@@ -49,9 +49,11 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = ../ELF-loader-test/main.c \
-		../ELF-loader-test/elfinfoprint.cpp 
+		../ELF-loader-test/elfinfoprint.cpp \
+		../ELF-loader-test/bootloader_compat.c 
 OBJECTS       = main.o \
-		elfinfoprint.o
+		elfinfoprint.o \
+		bootloader_compat.o
 DIST          = /usr/lib/qt/mkspecs/features/spec_pre.prf \
 		/usr/lib/qt/mkspecs/common/unix.conf \
 		/usr/lib/qt/mkspecs/common/linux.conf \
@@ -196,8 +198,10 @@ DIST          = /usr/lib/qt/mkspecs/features/spec_pre.prf \
 		/usr/lib/qt/mkspecs/features/lex.prf \
 		../ELF-loader-test/ELF-loader-test.pro datatypes.h \
 		elf64header.h \
-		elfinfoprint.h ../ELF-loader-test/main.c \
-		../ELF-loader-test/elfinfoprint.cpp
+		elfinfoprint.h \
+		bootloader_compat.h ../ELF-loader-test/main.c \
+		../ELF-loader-test/elfinfoprint.cpp \
+		../ELF-loader-test/bootloader_compat.c
 QMAKE_TARGET  = ELF-loader-test
 DESTDIR       = #avoid trailing-slash linebreak
 TARGET        = ELF-loader-test
@@ -560,8 +564,12 @@ main.o: ../ELF-loader-test/main.c
 
 elfinfoprint.o: ../ELF-loader-test/elfinfoprint.cpp ../ELF-loader-test/elfinfoprint.h \
 		../ELF-loader-test/elf64header.h \
-		../ELF-loader-test/datatypes.h
+		../ELF-loader-test/datatypes.h \
+		../ELF-loader-test/bootloader_compat.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o elfinfoprint.o ../ELF-loader-test/elfinfoprint.cpp
+
+bootloader_compat.o: ../ELF-loader-test/bootloader_compat.c ../ELF-loader-test/bootloader_compat.h
+	$(CC) -c $(CFLAGS) $(INCPATH) -o bootloader_compat.o ../ELF-loader-test/bootloader_compat.c
 
 ####### Install
 

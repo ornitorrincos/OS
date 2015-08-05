@@ -4,7 +4,8 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += main.c \
-    elfinfoprint.cpp
+    elfinfoprint.cpp \
+    bootloader_compat.c
 
 include(deployment.pri)
 qtcAddDeployment()
@@ -12,5 +13,6 @@ qtcAddDeployment()
 HEADERS += \
     datatypes.h \
     elf64header.h \
-    elfinfoprint.h
+    elfinfoprint.h \
+    bootloader_compat.h
 
