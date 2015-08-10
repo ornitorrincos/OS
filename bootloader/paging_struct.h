@@ -50,7 +50,7 @@ typedef struct _PML4E
   uchar PWT:1; // page level write though
   uchar PCD:1; // page level cache disable
   uchar A:1; // accesed
-  uchar ignored:1;
+  uchar PS:1; // value must be 1 for 1GB pages
   uchar MBZ:2;
   uchar AVL:3;
   uchar PDPBA:40; // physical address of the table pointed by this entry
@@ -68,7 +68,7 @@ typedef struct _PDPE
   uchar PWT:1;
   uchar PCD:1;
   uchar A:1;
-  uchar ignored:1;
+  uchar PS:1; // value must be 1 for 2MB pages
   uchar zero:1; // zero
   uchar MBZ:1;
   uchar AVL:3;
