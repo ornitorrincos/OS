@@ -6,9 +6,9 @@
 #include <wchar.h>
 #include <stdint.h>
 
-typedef int (*UEFIPrint)(const wchar_t *, ...);
-
-extern UEFIPrint Print;
+#define EFIAPI
+#define IN
+#define OUT
 
 // basic UEFI datatypes
 typedef uint8_t BOOLEAN;
@@ -21,7 +21,15 @@ typedef uint32_t UINT32;
 typedef int64_t INT64;
 typedef uint64_t UINT64;
 typedef char CHAR8;
-typedef uint16_t CHAR16;
+typedef wchar_t CHAR16;
+typedef uint64_t UINTN;
+
+// UEFI native functions
+typedef int (*UEFIPrint)(const wchar_t *, ...);
+extern UEFIPrint Print;
+
+// Bootloader defined
+void * EFIAPI LoadFile(char * name, UINTN memtype);
 
 #endif // BOOTLOADER_COMPAT_H
 

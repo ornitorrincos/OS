@@ -32,6 +32,7 @@ void ElfInfoPrint(Elf64_Ehdr * header)
   if(!IsElf(header))
   {
     Print(L"Not an ELF File\n");
+    return;
   }
 
   if(header->e_type == ET_EXEC)
@@ -47,4 +48,27 @@ void ElfInfoPrint(Elf64_Ehdr * header)
     Print(L"Unrecorginzed Machine\n");
   }
 
+  Print(L"Entry point: hx%x\n", header->e_entry);
+
+
+  char * strtable = elf_str_table(header);
+  Print(L"%s\n", strtable);
 }
+
+// functions to access section headers
+Elf64_Shdr *elf_sheader(Elf64_Ehdr *hdr)
+{
+  return (Elf64_Shdr *)((uintptr_t)hdr + hdr->e_shoff);
+}
+
+Elf64_Shdr *elf_section(Elf64_Ehdr *hdr, int idx)
+{
+  return &elf_sheader(hdr)[idx];
+}
+
+char *elf_str_table(Elf64_Ehdr *hdr)
+{
+  if(hdr->e_shstrndx == SHN_UNDEF) return NULL;
+  return (char *)hdr + elf_section(hdr, hdr->e_shstrndx)->sh_offset;
+}
+

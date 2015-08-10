@@ -3,9 +3,10 @@ CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= qt
 
-SOURCES += main.c \
+SOURCES += \
     elfinfoprint.cpp \
-    bootloader_compat.c
+    main.cpp \
+    bootloader_compat.cpp
 
 include(deployment.pri)
 qtcAddDeployment()
