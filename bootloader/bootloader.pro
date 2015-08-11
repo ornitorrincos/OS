@@ -10,7 +10,8 @@ SOURCES += main.c misc.s \
     ELF.c \
     vga.c \
     vmmem.c \
-    memory.c
+    memory.c \
+    paging.c
 
 include(deployment.pri)
 qtcAddDeployment()
@@ -22,5 +23,6 @@ HEADERS += \
     vmmem.h \
     memory.h \
     memorytypes.h \
-    paging_struct.h
+    paging_struct.h \
+    paging.h
 

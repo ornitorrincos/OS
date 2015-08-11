@@ -19,3 +19,12 @@ void * EFIAPI AllocatePagesType(IN UINTN size, IN UINTN type)
   Print(L"Allocation Failed\n");
   return NULL;
 }
+
+void bootloader_memset(void * in, UINTN size)
+{
+  unsigned char * tmpin = in;
+  for(int i = 0; i < size; i++)
+  {
+    tmpin[i] = 0;
+  }
+}

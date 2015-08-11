@@ -99,6 +99,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   PrintELFInfo(kernel);
 
 
+
+
   // attempt to allocate the memory map, first try is going to be too small
   // as such the firmware will return the correct size
   EFI_STATUS memret     = EFI_SUCCESS;
