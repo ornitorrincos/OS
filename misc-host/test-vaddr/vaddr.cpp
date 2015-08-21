@@ -1,14 +1,15 @@
 #include <iostream>
 #include <cstdio>
+#include <cstdint>
 
-struct s_vptr
+typedef struct __attribute__((packed))
 {
   unsigned long page:21;
   unsigned long PD:9;
   unsigned long PDP:9;
   unsigned long PML4:9;
   unsigned long sign:16;
-};
+} s_vptr;
 
 union v
 {
@@ -23,7 +24,10 @@ int main()
 
   unsigned long vaddr = 0x280000000; // 10GB
   
- v * p = (v*)&vaddr;
+  uint64_t kr = 0xffffffff7fffffff; // -2GB mark
+
+  //v * p = (v*)&vaddr;
+  v * p = (v*)&kr;
 
   std::cout << "sign " << p->vptr.sign << std::endl;
   std::cout << "PML4 " << p->vptr.PML4 << std::endl;

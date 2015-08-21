@@ -37,7 +37,7 @@ typedef struct _CPUIDsizes
 
 // CR3
 // the contents of this struct go into CR3
-typedef struct _CR3
+typedef struct __attribute__((packed))
 {
   uchar reserved1:3;
   uchar PWT:1;        // page level writethough
@@ -49,7 +49,7 @@ typedef struct _CR3
 
 // PML4E
 
-typedef struct _PML4E
+typedef struct __attribute__((packed))
 {
   uchar P:1; // present bit
   uchar RW:1; // read write (if 0 write protected)
@@ -67,7 +67,7 @@ typedef struct _PML4E
 
 // PDPE
 
-typedef struct _PDPE
+typedef struct __attribute__((packed))
 {
   uchar P:1;
   uchar RW:1;
@@ -86,7 +86,7 @@ typedef struct _PDPE
 
 // PDE
 
-typedef struct _PDE
+typedef struct __attribute__((packed))
 {
   uchar P:1;
   uchar RW:1;
@@ -105,7 +105,7 @@ typedef struct _PDE
 
 // PTE
 
-typedef struct _PTE
+typedef struct __attribute__((packed))
 {
   uchar P:1;
   uchar RW:1;
