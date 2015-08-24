@@ -3,6 +3,7 @@
 
 #include <efi.h>
 #include <efilib.h>
+#include <stdint.h>
 
 typedef UINT64 uchar; // need to replace this for other more sensible thing or location
 
@@ -39,120 +40,98 @@ typedef struct _CPUIDsizes
 // the contents of this struct go into CR3
 typedef struct __attribute__((packed))
 {
-  uchar reserved1:3;
-  uchar PWT:1;        // page level writethough
-  uchar PCD:1;        // page level cache disable
-  uchar reserved2:7;
-  uchar base_addr:40; // base address to the table of PML4 entries
-  uchar reserved3:13;
+  uint64_t reserved1:3;
+  uint64_t PWT:1;        // page level writethough
+  uint64_t PCD:1;        // page level cache disable
+  uint64_t reserved2:7;
+  uint64_t base_addr:40; // base address to the table of PML4 entries
+  uint64_t reserved3:13;
 } s_CR3;
 
 // PML4E
 
 typedef struct __attribute__((packed))
 {
-  uchar P:1; // present bit
-  uchar RW:1; // read write (if 0 write protected)
-  uchar US:1; // user/supervisor if 0 no user mode access
-  uchar PWT:1; // page level write though
-  uchar PCD:1; // page level cache disable
-  uchar A:1; // accesed
-  uchar PS:1; // value must be 1 for 1GB pages
-  uchar MBZ:2;
-  uchar AVL:3;
-  uchar PDPBA:40; // physical address of the table pointed by this entry
-  uchar available:11; // need to look into what values go here
-  uchar NX:1; // execute disable
+  uint64_t P:1; // present bit
+  uint64_t RW:1; // read write (if 0 write protected)
+  uint64_t US:1; // user/supervisor if 0 no user mode access
+  uint64_t PWT:1; // page level write though
+  uint64_t PCD:1; // page level cache disable
+  uint64_t A:1; // accesed
+  uint64_t PS:1; // value must be 1 for 1GB pages
+  uint64_t MBZ:2;
+  uint64_t AVL:3;
+  uint64_t PDPBA:40; // physical address of the table pointed by this entry
+  uint64_t available:11; // need to look into what values go here
+  uint64_t NX:1; // execute disable
 } s_PML4E;
 
 // PDPE
 
 typedef struct __attribute__((packed))
 {
-  uchar P:1;
-  uchar RW:1;
-  uchar US:1;
-  uchar PWT:1;
-  uchar PCD:1;
-  uchar A:1;
-  uchar PS:1; // value must be 1 for 2MB pages
-  uchar zero:1; // zero
-  uchar MBZ:1;
-  uchar AVL:3;
-  uchar PDBA:40;
-  uchar available:11;
-  uchar NX:1;
+  uint64_t P:1;
+  uint64_t RW:1;
+  uint64_t US:1;
+  uint64_t PWT:1;
+  uint64_t PCD:1;
+  uint64_t A:1;
+  uint64_t PS:1; // value must be 1 for 2MB pages
+  uint64_t zero:1; // zero
+  uint64_t MBZ:1;
+  uint64_t AVL:3;
+  uint64_t PDBA:40;
+  uint64_t available:11;
+  uint64_t NX:1;
 } s_PDPE;
 
 // PDE
 
 typedef struct __attribute__((packed))
 {
-  uchar P:1;
-  uchar RW:1;
-  uchar US:1;
-  uchar PWT:1;
-  uchar PCD:1;
-  uchar A:1;
-  uchar ignored1:1;
-  uchar zero:1;
-  uchar ignored2:1;
-  uchar AVL:3;
-  uchar PTBA:40;
-  uchar available:11;
-  uchar NX:1;
+  uint64_t P:1;
+  uint64_t RW:1;
+  uint64_t US:1;
+  uint64_t PWT:1;
+  uint64_t PCD:1;
+  uint64_t A:1;
+  uint64_t ignored1:1;
+  uint64_t zero:1;
+  uint64_t ignored2:1;
+  uint64_t AVL:3;
+  uint64_t PTBA:40;
+  uint64_t available:11;
+  uint64_t NX:1;
 } s_PDE;
 
 // PTE
 
 typedef struct __attribute__((packed))
 {
-  uchar P:1;
-  uchar RW:1;
-  uchar US:1;
-  uchar PWT:1;
-  uchar PCD:1;
-  uchar A:1;
-  uchar D:1;
-  uchar PAT:1;
-  uchar G:1;
-  uchar AVL:3;
-  uchar PPBA:40;
-  uchar available:11;
-  uchar NX:1;
+  uint64_t P:1;
+  uint64_t RW:1;
+  uint64_t US:1;
+  uint64_t PWT:1;
+  uint64_t PCD:1;
+  uint64_t A:1;
+  uint64_t D:1;
+  uint64_t PAT:1;
+  uint64_t G:1;
+  uint64_t AVL:3;
+  uint64_t PPBA:40;
+  uint64_t available:11;
+  uint64_t NX:1;
 } s_PTE;
 
-// unions
-
-union CR3
+typedef struct __attribute__((packed))
 {
-  s_CR3 bits;
-  long value;
-};
-
-union PML4E
-{
-  s_PML4E bits;
-  long value;
-};
-
-union PDPE
-{
-  s_PDPE bits;
-  long value;
-};
-
-union PDE
-{
-  s_PDE bits;
-  long value;
-};
-
-union PTE
-{
-  s_PTE bits;
-  long value;
-};
+  uint64_t offset:12;
+  uint64_t PT:9;
+  uint64_t PD:9;
+  uint64_t PDP:9;
+  uint64_t PML4:9;
+  uint64_t sign:16;
+} s_VPTR;
 
 #endif // PAGING_STRUCT_H
 
