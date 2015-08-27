@@ -47,7 +47,7 @@ void initCR3()
   if(allocstatus != EFI_SUCCESS)
   {
     Print(L"Paging space allocation failed");
-    return NULL;
+    return;
   }
 
   // 1024 pages at 4kb each
@@ -56,7 +56,7 @@ void initCR3()
   baseaddr = (uint64_t)pages;
   current = baseaddr;
 
-  CR3 = current;
+  CR3 = (uint64_t*)current;
   ((s_CR3*)CR3)->PCD = 1;
   ((s_CR3*)CR3)->PWT = 1;
 }
