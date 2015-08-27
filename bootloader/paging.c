@@ -42,6 +42,8 @@ void initCR3()
 {
   size = 1024;
 
+  Print(L"Started CR3\n");
+
   // 1024 pages for 4MB
   EFI_STATUS allocstatus = uefi_call_wrapper(BS->AllocatePages, 4, AllocateAnyPages, MEM_PAGING, size, &pages);
   if(allocstatus != EFI_SUCCESS)
@@ -59,6 +61,8 @@ void initCR3()
   CR3 = (uint64_t*)current;
   ((s_CR3*)CR3)->PCD = 1;
   ((s_CR3*)CR3)->PWT = 1;
+
+
 }
 
 void writeCR3()
@@ -77,6 +81,7 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
   {
     // allocate page
     (((s_CR3*)CR3)->base_addr) = GetNextEntry();
+    Print(L"CR3 value: 0x%llx\n", *((uint64_t*)CR3));
     // get the correct entry
     pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*tmp->PML4));
   }

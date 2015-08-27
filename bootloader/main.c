@@ -8,6 +8,7 @@
 #include "ELF.h"
 #include "memorytypes.h"
 #include "paging_struct.h"
+#include "paging.h"
 
 // pixel struct information(hardcoded to what qemu exposes)
 typedef struct _Pixel
@@ -95,10 +96,22 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   ELF * kernel = LoadFile(L"kernel.bin", MEM_KERNEL); // we set the memory type to the one from the kernel
 
-  // print general information about the kernel elf header
+  // print general information about the kers_CR3nel elf header
   PrintELFInfo(kernel);
 
 
+  // try some paging
+  initCR3();
+
+  uint64_t address = 4*1024;
+  while(address < 512*1024*1024)
+  {
+    SetVirtualAddress(address, address);
+    address += 4*1024;
+  }
+
+  // lets try setting up some virtual addresses at the end
+  SetVirtualAddress(0, 0-4*1024);
 
 
   // attempt to allocate the memory map, first try is going to be too small
@@ -207,6 +220,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
 
   //OSDATA * osdata = (OSDATA*)(640*1024);
+
+  writeCR3();
 
   osdata->Magic = 0xDDEE;
   osdata->FBWidth = 1024;
