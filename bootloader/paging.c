@@ -8,9 +8,14 @@
 
 uint64_t size;
 uint64_t baseaddr;
-EFI_PHYSICAL_ADDRESS pages;
+uint64_t current;
 
-uint64_t GetNextEntry(uint64_t current)
+EFI_PHYSICAL_ADDRESS pages;
+uint64_t * CR3;
+
+//uint64_t base_memory;
+
+uint64_t GetNextEntry()
 {
   uint64_t ret = current + 1024*4;
 
@@ -33,10 +38,8 @@ uint64_t GetNextEntry(uint64_t current)
   return ret;
 }
 
-void * SetPagingStructs()
+void initCR3()
 {
-
-
   size = 1024;
 
   // 1024 pages for 4MB
@@ -50,53 +53,97 @@ void * SetPagingStructs()
   // 1024 pages at 4kb each
   bootloader_memset((void*)pages, size*4*1024);
 
-  // set base CR3 value
-  // start setting paging at the next 4kb aligment
-  void * base_address = (void*)pages;
-  //void * next_address = (void*)(((unsigned char*)pages) + 4*1024);
-  void * next_address = (void*)GetNextEntry((uint64_t)base_address);
+  baseaddr = (uint64_t)pages;
+  current = baseaddr;
 
-  ((s_CR3*)base_address)->PWT = 0;
-  ((s_CR3*)base_address)->PCD = 0;
-  ((s_CR3*)base_address)->base_addr = (uchar)(next_address); // PML4E table
+  CR3 = current;
+  ((s_CR3*)CR3)->PCD = 1;
+  ((s_CR3*)CR3)->PWT = 1;
+}
 
-  //base_address = (void*)(((s_CR3*)base_address)->base_addr);
-  base_address = next_address;
-  next_address = (void*)GetNextEntry((uint64_t)base_address);
-  //next_address = (void*)(((unsigned char*)base_address) + 4*1024);
+void writeCR3()
+{
+  __asm__("movq %0, %%cr3;"
+          :
+          :"r"(*CR3));
+}
 
-  // PML4E
-  ((s_PML4E*)base_address)->P = 1;
-  ((s_PML4E*)base_address)->RW = 1;
-  ((s_PML4E*)base_address)->US = 1;
-  ((s_PML4E*)base_address)->PWT = 1;
-  ((s_PML4E*)base_address)->PCD = 1;
-  ((s_PML4E*)base_address)->PS = 0;
-  //((s_PML4E*)base_address)->G = 0;
-  ((s_PML4E*)base_address)->NX = 0;
-  ((s_PML4E*)base_address)->PDPBA = (uchar)next_address;
+void SetVirtualAddress(uint64_t phy, uint64_t virt)
+{
+  s_VPTR * tmp = (s_VPTR*)&virt;
+  s_PML4E * pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr));
 
-  // PDPTE
-  base_address = next_address;
-  next_address = (void*)GetNextEntry((uint64_t)base_address);
-  ((s_PDPE*)base_address)->P = 1;
-  ((s_PDPE*)base_address)->RW = 1;
-  ((s_PDPE*)base_address)->US = 1;
-  ((s_PDPE*)base_address)->PWT = 1;
-  ((s_PDPE*)base_address)->PCD = 1;
-  ((s_PDPE*)base_address)->PS = 0;
-  ((s_PDPE*)base_address)->NX = 0;
-  ((s_PDPE*)base_address)->PDBA = (uchar)next_address;
+  if((uint64_t)pml4e == 0)
+  {
+    // allocate page
+    (((s_CR3*)CR3)->base_addr) = GetNextEntry();
+    // get the correct entry
+    pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*tmp->PML4));
+  }
 
+  if(pml4e->P == 0)
+  {
+    // initialize the page
+    pml4e->P = 1;
+    pml4e->RW = 1;
+    pml4e->US = 1;
+    pml4e->PWT = 1;
+    pml4e->PCD = 1;
+    pml4e->PS = 0;
+    pml4e->NX = 0;
+  }
 
-  // PTE
-  // need a for loop here to setup paging
-  base_address = next_address;
-  next_address = (void*)GetNextEntry((uint64_t)base_address);
-  //((s_PTE*))
+  s_PDPE * pdpe = ((s_PDPE*)((s_PML4E*)(pml4e->PDPBA)));
+  if((uint64_t)pdpe == 0)
+  {
+    ((s_PML4E*)pml4e)->PDPBA = GetNextEntry();
+    pdpe = ((s_PDPE*)(((s_PML4E*)pml4e->PDPBA) + 8*tmp->PDP));
+  }
 
+  if(pdpe->P == 0)
+  {
+    pdpe->P = 1;
+    pdpe->RW = 1;
+    pdpe->US = 1;
+    pdpe->PWT = 1;
+    pdpe->PCD = 1;
+    pdpe->PS = 0;
+    pdpe->NX = 0;
+  }
 
+  s_PDE * pde = ((s_PDE*)((s_PDPE*)pdpe->PDBA));
+  if((uint64_t)pde == 0)
+  {
+    ((s_PDPE*)pdpe)->PDBA = GetNextEntry();
+    pde = ((s_PDE*)(((s_PDPE*)pdpe->PDBA) + 8*tmp->PD));
+  }
 
+  if(pde->P == 0)
+  {
+    pde->P = 1;
+    pde->RW = 1;
+    pde->US = 1;
+    pde->PWT = 1;
+    pde->PCD = 1;
+    //pde->PS = 0;
+    pde->NX = 0;
+  }
 
-  return (void*)pages;
+  s_PTE * pte = ((s_PTE*)((s_PDE*)pde->PTBA));
+  if((uint64_t)pte == 0)
+  {
+    ((s_PDE*)pde)->PTBA = GetNextEntry();
+    pte = ((s_PTE*)(((s_PDE*)pde->PTBA) + 8*tmp->PT));
+  }
+
+  if(pte->P == 0)
+  {
+    pte->RW = 1;
+    pte->US = 1;
+    pte->PWT = 1;
+    pte->PCD = 1;
+    pte->G = 0;
+    pte->NX = 0;
+    pte->PPBA = phy;
+  }
 }

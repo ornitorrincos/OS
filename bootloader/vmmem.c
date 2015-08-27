@@ -1,14 +1,7 @@
 #include "vmmem.h"
 
-#include "paging_struct.h"
+//#include "paging_struct.h"
 
-// sets the CR3 register for paging
-void EFIAPI SetCR3(union CR3 t)
-{
-  __asm__("movq %0, %%cr3;"
-          :
-          :"r"(t.value));
-}
 
 EFI_STATUS EFIAPI SetVM(IN UINTN size, IN UINTN descriptorsize, IN UINTN descriptorversion, EFI_MEMORY_DESCRIPTOR * map, void * kernel)
 {
