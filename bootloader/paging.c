@@ -138,6 +138,7 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
 
   if(pte->P == 0)
   {
+    pte->P = 1;
     pte->RW = 1;
     pte->US = 1;
     pte->PWT = 1;
