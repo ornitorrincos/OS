@@ -32,9 +32,11 @@ uint64_t GetNextEntry()
     baseaddr = (uint64_t)pages;
     ret = baseaddr;
 
+    current = ret;
     return ret;
   }
 
+  current = ret;
   return ret;
 }
 
