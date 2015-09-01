@@ -37,20 +37,7 @@ typedef struct _OSDATA
 extern void BootDisableInterrupts(void); // asm code is not correct(callee doesn't set the stack correctly)
 typedef void (*kfn)(OSDATA *);  // typedef to setup the entry point of the kernel and do a "jump" into it
 
-UINT64 EFIAPI GetVMCPUID()
-{
-  long out = 0;
-  long id = 0x80000008;
 
-  __asm__("movq %1, %%rax;"
-          "cpuid;"
-          "movq %%rax, %0;"
-          :"=r"(out)
-          :"r"(id)
-          );
-
-  return out;
-}
 
 void
 EFIAPI
@@ -75,14 +62,6 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
    
 
   Print(L"Firmware Vendor: %s Rev: 0x%08x\n", ST->FirmwareVendor, ST->FirmwareRevision);
-   
-  UINT64 cpu = GetVMCPUID();
-
-  CPUIDsizes * sizes = (CPUIDsizes*)&cpu;
-
-  Print(L"raw: %x\n", cpu);
-  Print(L"Physical: %d\n", sizes->PhysicalAddress);
-  Print(L"Virtual: %d\n", sizes->VirtualAddress);
 
   //while(1){};
 
@@ -103,13 +82,14 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   // try some paging
   initCR3();
 
-  uint64_t address = 4*1024;
-  while(address < 512*1024*1024)
+  uint64_t address = 0;
+  uint64_t max = 0x20000000;
+  while(address < max)
   {
     SetVirtualAddress(address, address);
-    address += 4*1024;
+    address += 0x1000;
   }
-
+  //SetVirtualAddress(0x1000, 0x1000);
   // lets try setting up some virtual addresses at the end
   SetVirtualAddress(0, 0-4*1024);
 
@@ -221,7 +201,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   //OSDATA * osdata = (OSDATA*)(640*1024);
 
-  writeCR3();
+
 
   osdata->Magic = 0xDDEE;
   osdata->FBWidth = 1024;
@@ -232,7 +212,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   // this while only serves not to call the kernel for now
   // after calling exit boot services we can't return to the uefi environment because it's been destroyed
-  while(1){}
+  //while(1){}
 
   kernel = (ELF*)0x280000000; // correct virtual pointer to 10GB (Sign: 0  PML4: 0  PDP:10  PD:0  Page:0)
 
@@ -240,6 +220,10 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   // disable interrupts
   __asm__("cli");
+
+  writeCR3();
+
+  __asm__("hlt");
 
   kernel_jump(osdata);
 

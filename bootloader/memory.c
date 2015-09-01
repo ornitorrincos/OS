@@ -20,11 +20,11 @@ void * EFIAPI AllocatePagesType(IN UINTN size, IN UINTN type)
   return NULL;
 }
 
-void bootloader_memset(void * in, uint64_t size)
+void bootloader_memset(void * in, uint64_t size, uint8_t value)
 {
-  unsigned char * tmpin = in;
+  uint8_t * tmpin = in;
   for(int i = 0; i < size; i++)
   {
-    tmpin[i] = 0;
+    tmpin[i] = value;
   }
 }

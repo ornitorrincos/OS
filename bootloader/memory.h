@@ -9,6 +9,6 @@
 #include "memorytypes.h"
 
 void * EFIAPI AllocatePagesType(IN UINTN size, IN UINTN type);
-void bootloader_memset(void *, uint64_t size);
+void bootloader_memset(void *, uint64_t size, uint8_t value);
 
 #endif
