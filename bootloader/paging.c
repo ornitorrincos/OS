@@ -131,6 +131,11 @@ void initCR3()
 
 }
 
+void printCR3()
+{
+  Print(L"CR3 value: 0x%llX\n", *((uint64_t*)CR3));
+}
+
 void writeCR3()
 {
   __asm__("movq %0, %%cr3;"
@@ -158,9 +163,9 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
     //Print(L"negative works\n");
     // allocate page
     Print(L"New PML4\n");
-    Print(L"CR3 value: 0x%llX\n", *((uint64_t*)CR3));
+    //Print(L"CR3 value: 0x%llX\n", *((uint64_t*)CR3));
     (((s_CR3*)CR3)->base_addr) = GetNextEntry();
-    Print(L"CR3 value: 0x%llX\n", *((uint64_t*)CR3));
+    //Print(L"CR3 value: 0x%llX\n", *((uint64_t*)CR3));
     // get the correct entry
     pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*tmp->PML4));
     bootloader_memset(pml4e, 8, 0x0);

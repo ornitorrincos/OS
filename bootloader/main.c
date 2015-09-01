@@ -79,19 +79,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   PrintELFInfo(kernel);
 
 
-  // try some paging
-  initCR3();
 
-  uint64_t address = 0;
-  uint64_t max = 0x20000000;
-  while(address < max)
-  {
-    SetVirtualAddress(address, address);
-    address += 0x1000;
-  }
-  //SetVirtualAddress(0x1000, 0x1000);
-  // lets try setting up some virtual addresses at the end
-  SetVirtualAddress(0, 0-4*1024);
 
 
   // attempt to allocate the memory map, first try is going to be too small
@@ -128,6 +116,41 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   {
     Print(L"MemoryMap Aquired\n");
   }
+
+  // set virtual addresses in here
+  // try some paging
+  initCR3();
+
+  //uint64_t address = 0;
+  //uint64_t max = 0x400000000ull;//0x20000000;
+  EFI_MEMORY_DESCRIPTOR * mapiterator = map;
+
+  uint64_t elements = mapsize/descriptorsize;
+
+  printCR3();
+
+
+  for(int entry = 0; entry < elements; ++entry)
+  {
+    mapiterator = (EFI_MEMORY_DESCRIPTOR*)(((EFI_PHYSICAL_ADDRESS)mapiterator + descriptorsize));
+    uint64_t page = mapiterator->PhysicalStart;
+
+    for(int pageentry = 0; pageentry < mapiterator->NumberOfPages; pageentry++)
+    {
+      SetVirtualAddress(page, page);
+      page += 0x1000;
+    }
+  }
+  printCR3();
+  //while(address < max)
+  //{
+  //  SetVirtualAddress(address, address);
+  //  address += 0x1000;
+  //}
+  //SetVirtualAddress(0x1000, 0x1000);
+  // lets try setting up some virtual addresses at the end
+  SetVirtualAddress(0, 0-4*1024);
+  printCR3();
 
 
   // the call to exit boot services tells the firmware we are ready to take control of the system
@@ -212,7 +235,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   // this while only serves not to call the kernel for now
   // after calling exit boot services we can't return to the uefi environment because it's been destroyed
-  //while(1){}
+  //
 
   kernel = (ELF*)0x280000000; // correct virtual pointer to 10GB (Sign: 0  PML4: 0  PDP:10  PD:0  Page:0)
 
@@ -222,6 +245,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   __asm__("cli");
 
   writeCR3();
+  while(1){}
 
   __asm__("hlt");
 
