@@ -35,7 +35,7 @@ uint64_t GetNextEntry()
       Print(L"Paging space allocation failed");
       return -1;
     }
-    bootloader_memset((void*)pages, size*4*1024, 0x0);
+    bootloader_memset((void*)pages, size*0x1000, 0x0);
     baseaddr = (uint64_t)pages;
     ret = baseaddr;
 
@@ -43,11 +43,23 @@ uint64_t GetNextEntry()
     count = 0;
 
     current = ret;
+
+    if(ret % 0x1000 != 0)
+    {
+      Print("WARNING Memory not aligned\n");
+    }
+
     return ret;
   }
 
   //Print(L"New Entry: 0x%llX\n", ret);
   current = ret;
+
+  if(ret % 0x1000 != 0)
+  {
+    Print("WARNING Memory not aligned\n");
+  }
+
   return ret;
 }
 
@@ -126,6 +138,13 @@ void initCR3()
   Print(L"Virtual: %d\n", sizes->VirtualAddress);
   virtualmemory = sizes->PhysicalAddress;
 
+  int32_t pml4es = sizeof(s_PML4E);
+
+  Print(L"PML4E size: %d\n", sizeof(s_PML4E));
+  Print(L"PDPE size: %d\n", sizeof(s_PDPE));
+  Print(L"PDE size: %d\n", sizeof(s_PDE));
+  Print(L"PTE size: %d\n", sizeof(s_PTE));
+
   maxneg = powerTwo(virtualmemory) - 1;
   ((s_CR3*)CR3)->base_addr = maxneg;
 
@@ -168,7 +187,7 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
     //Print(L"CR3 value: 0x%llX\n", *((uint64_t*)CR3));
     // get the correct entry
     pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*tmp->PML4));
-    bootloader_memset(pml4e, 8, 0x0);
+    //bootloader_memset(pml4e, 8, 0x0);
     pml4e->PDPBA =  maxneg;
   }
 
@@ -203,7 +222,7 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
     Print(L"New PDP\n");
     ((s_PML4E*)pml4e)->PDPBA = GetNextEntry();
     pdpe = ((s_PDPE*)(((s_PML4E*)pml4e->PDPBA) + 8*tmp->PDP));
-    bootloader_memset(pdpe, 8, 0x0);
+    //bootloader_memset(pdpe, 8, 0x0);
     pdpe->PDBA =  maxneg;
   }
 
@@ -223,13 +242,13 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
     pdpe->NX = 0;
   }
 
-  s_PDE * pde = ((s_PDE*)((s_PDPE*)pdpe->PDBA));
+  s_PDE * pde = ((s_PDE*)((s_PDPE*)pdpe)->PDBA);
   if((uint64_t)pde == maxneg)
   {
     Print(L"New PD\n");
     ((s_PDPE*)pdpe)->PDBA = GetNextEntry();
     pde = ((s_PDE*)(((s_PDPE*)pdpe->PDBA) + 8*tmp->PD));
-    bootloader_memset(pde, 8, 0x0);
+    //bootloader_memset(pde, 8, 0x0);
     pde->PTBA =  maxneg;
   }
 
@@ -248,21 +267,54 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
     pde->NX = 0;
   }
 
+  //if(tmp->PT == 7)
+  if(phy == 0x7E07000)
+  {
+    Print(L"AfterWrite StartingCheck\n");
+    Print(L"Base: %llx\n", pdpe->PDBA);
+    for(int i = 0; i < 512; ++i)
+    {
+      Print(L"%d element 0x%llx\n", i, ((uint64_t)(((s_PDPE*)pdpe)->PDBA + 8*i)));
+    }
+    Print(L"phy: 0x%llx\n", phy);
+    Print(L"PTBA: 0x%llx\n", pde->PTBA);
+    Print(L"pde: 0x%llx\n", *(uint64_t*)pde);
+    Print(L"AfterWrite EndingCheck\n");
+  }
+
+
   s_PTE * pte = ((s_PTE*)((s_PDE*)pde->PTBA));
   if((uint64_t)pte == maxneg)
   {
-    //Print(L"New PT\n");
+    Print(L"New PT\n");
     ((s_PDE*)pde)->PTBA = GetNextEntry();
+
+
+    if(((s_PDE*)pde)->PTBA == 0)
+    {
+      Print(L"invalid entry (0)\n");
+    }
 
 
     //pte->PDPBA =  maxneg;
   }
   pte = ((s_PTE*)(((s_PDE*)pde->PTBA) + 8*tmp->PT));
-  bootloader_memset(pte, 8, 0x0);
+  //bootloader_memset(pte, 8, 0x0);
+
+  /*if(tmp->PT == 7)
+  {
+    Print(L"StartingCheck\n");
+    Print(L"Base: %d\n", (uint64_t)(((s_PDE*)pde->PTBA)));
+    for(int i = 0; i < 8; ++i)
+    {
+      Print(L"%d element 0x%llx\n", ((uint64_t)(((s_PDE*)pde->PTBA) + 8*i)));
+    }
+    Print(L"EndingCheck\n");
+  }*/
 
   //Print(L"PTE 0x%llX\n", pte);
 
-  if(pte->P == 0)
+  //if(pte->P == 0)
   {
     pte->P = 1;
     pte->RW = 1;
@@ -273,6 +325,20 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
     pte->NX = 0;
     pte->PPBA = phy;
   }
+
+  /*if(tmp->PT == 7)
+  {
+    Print(L"AfterWrite StartingCheck\n");
+    Print(L"Base: %llx\n", pde->PTBA);
+    for(int i = 0; i < 8; ++i)
+    {
+      Print(L"%d element 0x%llx\n", i, ((uint64_t)(((s_PDE*)pde->PTBA) + 8*i)));
+    }
+    Print(L"phy: 0x%llx\n", phy);
+    Print(L"PPBA: 0x%llx\n", pte->PPBA);
+    Print(L"pte: 0x%llx\n", *(uint64_t*)pte);
+    Print(L"AfterWrite EndingCheck\n");
+  }*/
 
   /*Print(L"CR3 value: 0x%llX\n", *(uint64_t*)(((s_CR3*)CR3)->base_addr));
   Print(L"PML4 value: 0x%llX\n", *(uint64_t*)(((s_PML4E*)pml4e)->PDPBA));

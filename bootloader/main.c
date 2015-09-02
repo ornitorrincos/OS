@@ -149,7 +149,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   //}
   //SetVirtualAddress(0x1000, 0x1000);
   // lets try setting up some virtual addresses at the end
-  SetVirtualAddress(0, 0-4*1024);
+  //SetVirtualAddress(0, 0-4*1024);
   printCR3();
 
 
@@ -244,7 +244,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   // disable interrupts
   __asm__("cli");
 
-  writeCR3();
+  //writeCR3();
   while(1){}
 
   __asm__("hlt");
