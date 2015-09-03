@@ -129,7 +129,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   printCR3();
 
-
+/*
   for(int entry = 0; entry < elements; ++entry)
   {
     mapiterator = (EFI_MEMORY_DESCRIPTOR*)(((EFI_PHYSICAL_ADDRESS)mapiterator + descriptorsize));
@@ -140,8 +140,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
       SetVirtualAddress(page, page);
       page += 0x1000;
     }
-  }
-  printCR3();
+  }*/
+  //printCR3();
   //while(address < max)
   //{
   //  SetVirtualAddress(address, address);
@@ -150,9 +150,10 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   //SetVirtualAddress(0x1000, 0x1000);
   // lets try setting up some virtual addresses at the end
   //SetVirtualAddress(0, 0-4*1024);
-  printCR3();
+  //printCR3();
 
-  checkIdentity(*(uint64_t*)kernel);
+  //Print(L"kernel: 0x%llx\n", kernel);
+  //checkIdentity((uint64_t)kernel);
 
 
   // the call to exit boot services tells the firmware we are ready to take control of the system

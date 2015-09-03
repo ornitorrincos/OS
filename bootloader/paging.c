@@ -104,6 +104,17 @@ uint64_t powerTwo(uint64_t power)
 
 void initCR3()
 {
+  UINT64 cpu = GetVMCPUID();
+
+  CPUIDsizes * sizes = (CPUIDsizes*)&cpu;
+
+  Print(L"raw: %x\n", cpu);
+  Print(L"Physical: %d\n", sizes->PhysicalAddress);
+  Print(L"Virtual: %d\n", sizes->VirtualAddress);
+  virtualmemory = sizes->PhysicalAddress;
+
+  maxneg = powerTwo(virtualmemory) - 1;
+
   size = 1024;
 
   Print(L"Started CR3\n");
@@ -126,22 +137,20 @@ void initCR3()
 
   CR3 = (uint64_t*)current;
   *CR3 = 0;
-  ((s_CR3*)CR3)->PCD = 1;
-  ((s_CR3*)CR3)->PWT = 1;
+
+  *CR3 |= CR3_PCD;
+  *CR3 |= CR3_PWT;
+  *CR3 |=(maxneg << CR3_ADDR_SHIFT);
+
+  //((s_CR3*)CR3)->PCD = 1;
+  //((s_CR3*)CR3)->PWT = 1;
   //((s_CR3*)CR3)->base_addr = GetNextEntry();
-  UINT64 cpu = GetVMCPUID();
 
-  CPUIDsizes * sizes = (CPUIDsizes*)&cpu;
-
-  Print(L"raw: %x\n", cpu);
-  Print(L"Physical: %d\n", sizes->PhysicalAddress);
-  Print(L"Virtual: %d\n", sizes->VirtualAddress);
-  virtualmemory = sizes->PhysicalAddress;
 
   int32_t pml4es = sizeof(s_PML4E);
 
-  maxneg = powerTwo(virtualmemory) - 1;
-  ((s_CR3*)CR3)->base_addr = maxneg;
+
+  //((s_CR3*)CR3)->base_addr = maxneg;
 
 }
 
@@ -281,7 +290,7 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
     pte->PCD = 1;
     pte->G = 0;
     pte->NX = 0;
-    pte->PPBA = phy; // not actually phy directly, but the offset into the 4KB page
+    pte->PPBA = phy & 0xFFFFFFF000; // not actually phy directly, but the offset into the 4KB page
   }
 
   /*Print(L"CR3 value: 0x%llX\n", *(uint64_t*)(((s_CR3*)CR3)->base_addr));
@@ -293,24 +302,42 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
 
 uint8_t checkIdentity(uint64_t phy)
 {
-  Print(L"WTF\n");
   s_VPTR * virt = &phy;
   //uint8_t phyvalue = (uint8_t)(*(uint64_t*)phy);
-  uint8_t phyvalue = phy;
+  uint8_t phyvalue = *(uint64_t*)phy;
   uint8_t virtvalue;
-  Print(L"WTF\n");
   s_PML4E * pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*virt->PML4));
-  Print(L"WTF\n");
+
   s_PDPE * pdpe = ((s_PDPE*)(pml4e->PDPBA + 8*virt->PDP));
-  Print(L"WTF\n");
   s_PDE * pde = ((s_PDE*)(pdpe->PDBA + 8*virt->PD));
-  Print(L"WTF\n");
   s_PTE * pte = ((s_PTE*)(pde->PTBA + 8*virt->PT));
-  Print(L"WTF\n");
   virtvalue = *(uint8_t*)(pte->PPBA + virt->offset);
-  Print(L"WTF\n");
 
   // get the correct virtual value
+
+  Print(L"ADDR: 0x%llx\n", phy);
+
+  s_PML4E testpml4e;
+  testpml4e.A = 0;
+  testpml4e.available = 0;
+  testpml4e.AVL = 0;
+  testpml4e.MBZ = 0;
+  testpml4e.NX = 0;
+  testpml4e.P = 1;
+  testpml4e.PCD = 0;
+  testpml4e.PDPBA = phy & 0xFFFFFFF000;
+  testpml4e.PS = 0;
+  testpml4e.PWT = 0;
+  testpml4e.RW = 0;
+  testpml4e.US = 0;
+
+  Print(L"TestPML4E 0x%llx\n", testpml4e);
+  Print(L"PML4E 0x%llx\n", (uint64_t)pml4e);
+  Print(L"Present: 0x%llx\n", ((uint64_t)pml4e) & 0x1);
+  Print(L"PDPE  0x%llx\n", (uint64_t)pdpe);
+  Print(L"PDE   0x%llx\n", (uint64_t)pde);
+  Print(L"PTE   0x%llx\n", (uint64_t)pte);
+  Print(L"PPBA  0x%llx\n", pte->PPBA);
 
   Print(L"PML4 %d\n", virt->PML4);
   Print(L"PDP  %d\n", virt->PDP);
