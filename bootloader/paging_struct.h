@@ -9,6 +9,8 @@ typedef UINT64 uchar; // need to replace this for other more sensible thing or l
 
 UINT64 GetVMCPUID(); // implemented in misc.s
 
+extern uint64_t maxneg;
+
 typedef struct _CPUIDsizes
 {
   UINT64 PhysicalAddress:8;
@@ -48,6 +50,45 @@ typedef struct __attribute__((packed))
   uint64_t reserved3:13;
 } s_CR3;
 
+// Virtual Pointer
+#define VP_OFF_PHY   0
+#define VP_OFF_PT   12
+#define VP_OFF_PD   21
+#define VP_OFF_PDP  30
+#define VP_OFF_PML4 39
+#define VP_OFF_SIGN 48
+
+#define GetPhyOffset(x)  (x & 0xFFF)
+#define GetPTOffset(x)   ((x >> VP_OFF_PT) & 0x1FF)
+#define GetPDOffset(x)   ((x >> VP_OFF_PD) & 0x1FF)
+#define GetPDPOffset(x)  ((x >> VP_OFF_PDP) & 0x1FF)
+#define GetPML4Offset(x) ((x > VP_OFF_PML4) & 0x1FF)
+#define GetSignOffset(x) ((x > VP_OFF_SIGN) & 0xFFFF)
+
+
+// CR3
+#define CR3_PWT (1 << 3)
+#define CR3_PCD (1 << 4)
+#define CR3_ADDR_SHIFT 12
+
+// Page Entry
+#define PE_P   (1 <<  0)
+#define PE_RW  (1 <<  1)
+#define PE_US  (1 <<  2)
+#define PE_PWT (1 <<  3)
+#define PE_PCD (1 <<  4)
+#define PE_A   (1 <<  5)
+#define PE_D   (1 <<  6)
+#define PE_PS  (1 <<  7)
+#define PE_G   (1 <<  8)
+#define PE_BA  (1 << 12)
+#define PE_NX  (1 << 63)
+
+#define MaskTable(x)   (x & maxneg)
+#define MaskPhyAddr(x) (x & 0xFFFFFFF000)
+#define OffsetAddr(x)  (x << PE_BA)
+
+
 // PML4E
 
 typedef struct __attribute__((packed))
@@ -65,6 +106,8 @@ typedef struct __attribute__((packed))
   uint64_t available:11; // need to look into what values go here
   uint64_t NX:1; // execute disable
 } s_PML4E;
+
+
 
 // PDPE
 
