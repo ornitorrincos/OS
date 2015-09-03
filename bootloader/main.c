@@ -152,6 +152,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   //SetVirtualAddress(0, 0-4*1024);
   printCR3();
 
+  checkIdentity(*(uint64_t*)kernel);
+
 
   // the call to exit boot services tells the firmware we are ready to take control of the system
   Print(L"Calling ExitBootServices\n");

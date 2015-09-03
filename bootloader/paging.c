@@ -140,11 +140,6 @@ void initCR3()
 
   int32_t pml4es = sizeof(s_PML4E);
 
-  Print(L"PML4E size: %d\n", sizeof(s_PML4E));
-  Print(L"PDPE size: %d\n", sizeof(s_PDPE));
-  Print(L"PDE size: %d\n", sizeof(s_PDE));
-  Print(L"PTE size: %d\n", sizeof(s_PTE));
-
   maxneg = powerTwo(virtualmemory) - 1;
   ((s_CR3*)CR3)->base_addr = maxneg;
 
@@ -181,27 +176,23 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
   {
     //Print(L"negative works\n");
     // allocate page
-    Print(L"New PML4\n");
+    //Print(L"New PML4\n");
     //Print(L"CR3 value: 0x%llX\n", *((uint64_t*)CR3));
-    (((s_CR3*)CR3)->base_addr) = GetNextEntry();
+    ((s_CR3*)CR3)->base_addr = GetNextEntry();
     //Print(L"CR3 value: 0x%llX\n", *((uint64_t*)CR3));
     // get the correct entry
     pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*tmp->PML4));
+
+    for(int i = 0; i < 512; ++i)
+    {
+      ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*i))->PDPBA = maxneg;
+    }
+
     //bootloader_memset(pml4e, 8, 0x0);
     pml4e->PDPBA =  maxneg;
   }
 
-  /*int i = 0;
-  for(i = 0; i < 512; ++i)
-  {
-    s_PML4E * pml4ee = ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*i));
-    Print(L"PML4EE: 0x%llX\n", pml4ee);
-  }*/
-
   pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*tmp->PML4));
-
-  //Print(L"PML4  0x%llX\n", (uint64_t)((s_CR3*)CR3)->base_addr);
-  //Print(L"PML4E 0x%llX\n", (uint64_t)pml4e);
 
 
   //if(pml4e->P == 0)
@@ -219,16 +210,19 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
   s_PDPE * pdpe = ((s_PDPE*)((s_PML4E*)(pml4e->PDPBA)));
   if((uint64_t)pdpe == maxneg)
   {
-    Print(L"New PDP\n");
+    //Print(L"New PDP\n");
     ((s_PML4E*)pml4e)->PDPBA = GetNextEntry();
-    pdpe = ((s_PDPE*)(((s_PML4E*)pml4e->PDPBA) + 8*tmp->PDP));
-    //bootloader_memset(pdpe, 8, 0x0);
+    pdpe = ((s_PDPE*)(pml4e->PDPBA + 8*tmp->PDP));
+
+    for(int i = 0; i < 512; ++i)
+    {
+      ((s_PDPE*)(pml4e->PDPBA + 8*i))->PDBA = maxneg;
+    }
+
     pdpe->PDBA =  maxneg;
   }
 
-  //Print(L"PDP  0x%llX\n", (uint64_t)((s_PDPE*)(((s_PML4E*)pml4e->PDPBA) + 8*tmp->PDP)));
-  //Print(L"PDPE 0x%llX\n", (uint64_t)pdpe);
-  pdpe = ((s_PDPE*)(((s_PML4E*)pml4e->PDPBA) + 8*tmp->PDP));
+  pdpe = (s_PDPE*)(pml4e->PDPBA + 8*tmp->PDP);
 
 
   //if(pdpe->P == 0)
@@ -242,19 +236,21 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
     pdpe->NX = 0;
   }
 
-  s_PDE * pde = ((s_PDE*)((s_PDPE*)pdpe)->PDBA);
+  s_PDE * pde = ((s_PDE*)(pdpe->PDBA));
   if((uint64_t)pde == maxneg)
   {
-    Print(L"New PD\n");
+    //Print(L"New PD\n");
     ((s_PDPE*)pdpe)->PDBA = GetNextEntry();
-    pde = ((s_PDE*)(((s_PDPE*)pdpe->PDBA) + 8*tmp->PD));
-    //bootloader_memset(pde, 8, 0x0);
-    pde->PTBA =  maxneg;
+    pde = (s_PDE*)(pdpe->PDBA + 8*tmp->PD);
+
+    // need to initialize PTBA to maxneg for all of the 512 entries
+
+    for(int i = 0; i < 512; ++i)
+    {
+      ((s_PDE*)(pdpe->PDBA + 8*i))->PTBA = maxneg;
+    }
   }
-
-  pde = ((s_PDE*)(((s_PDPE*)pdpe->PDBA) + 8*tmp->PD));
-
-  //Print(L"PDE 0x%llX\n", pde);
+  pde = (s_PDE*)(pdpe->PDBA + 8*tmp->PD);
 
   //if(pde->P == 0)
   {
@@ -267,52 +263,14 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
     pde->NX = 0;
   }
 
-  //if(tmp->PT == 7)
-  if(phy == 0x7E07000)
-  {
-    Print(L"AfterWrite StartingCheck\n");
-    Print(L"Base: %llx\n", pdpe->PDBA);
-    for(int i = 0; i < 512; ++i)
-    {
-      Print(L"%d element 0x%llx\n", i, ((uint64_t)(((s_PDPE*)pdpe)->PDBA + 8*i)));
-    }
-    Print(L"phy: 0x%llx\n", phy);
-    Print(L"PTBA: 0x%llx\n", pde->PTBA);
-    Print(L"pde: 0x%llx\n", *(uint64_t*)pde);
-    Print(L"AfterWrite EndingCheck\n");
-  }
-
-
   s_PTE * pte = ((s_PTE*)((s_PDE*)pde->PTBA));
+
   if((uint64_t)pte == maxneg)
   {
-    Print(L"New PT\n");
-    ((s_PDE*)pde)->PTBA = GetNextEntry();
-
-
-    if(((s_PDE*)pde)->PTBA == 0)
-    {
-      Print(L"invalid entry (0)\n");
-    }
-
-
-    //pte->PDPBA =  maxneg;
+    //Print(L"New PT\n");
+    pde->PTBA = GetNextEntry();
   }
-  pte = ((s_PTE*)(((s_PDE*)pde->PTBA) + 8*tmp->PT));
-  //bootloader_memset(pte, 8, 0x0);
-
-  /*if(tmp->PT == 7)
-  {
-    Print(L"StartingCheck\n");
-    Print(L"Base: %d\n", (uint64_t)(((s_PDE*)pde->PTBA)));
-    for(int i = 0; i < 8; ++i)
-    {
-      Print(L"%d element 0x%llx\n", ((uint64_t)(((s_PDE*)pde->PTBA) + 8*i)));
-    }
-    Print(L"EndingCheck\n");
-  }*/
-
-  //Print(L"PTE 0x%llX\n", pte);
+  pte = (s_PTE*)(pde->PTBA + 8*tmp->PT);
 
   //if(pte->P == 0)
   {
@@ -323,26 +281,52 @@ void SetVirtualAddress(uint64_t phy, uint64_t virt)
     pte->PCD = 1;
     pte->G = 0;
     pte->NX = 0;
-    pte->PPBA = phy;
+    pte->PPBA = phy; // not actually phy directly, but the offset into the 4KB page
   }
-
-  /*if(tmp->PT == 7)
-  {
-    Print(L"AfterWrite StartingCheck\n");
-    Print(L"Base: %llx\n", pde->PTBA);
-    for(int i = 0; i < 8; ++i)
-    {
-      Print(L"%d element 0x%llx\n", i, ((uint64_t)(((s_PDE*)pde->PTBA) + 8*i)));
-    }
-    Print(L"phy: 0x%llx\n", phy);
-    Print(L"PPBA: 0x%llx\n", pte->PPBA);
-    Print(L"pte: 0x%llx\n", *(uint64_t*)pte);
-    Print(L"AfterWrite EndingCheck\n");
-  }*/
 
   /*Print(L"CR3 value: 0x%llX\n", *(uint64_t*)(((s_CR3*)CR3)->base_addr));
   Print(L"PML4 value: 0x%llX\n", *(uint64_t*)(((s_PML4E*)pml4e)->PDPBA));
   Print(L"PDP value: 0x%llX\n", *(uint64_t*)(((s_PDPE*)pdpe)->PDBA));
   Print(L"PD value: 0x%llX\n", *(uint64_t*)(((s_PDE*)pde)->PTBA));
   Print(L"PT value: 0x%llX\n", *(uint64_t*)(((s_PTE*)pte)->PPBA));*/
+}
+
+uint8_t checkIdentity(uint64_t phy)
+{
+  Print(L"WTF\n");
+  s_VPTR * virt = &phy;
+  //uint8_t phyvalue = (uint8_t)(*(uint64_t*)phy);
+  uint8_t phyvalue = phy;
+  uint8_t virtvalue;
+  Print(L"WTF\n");
+  s_PML4E * pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*virt->PML4));
+  Print(L"WTF\n");
+  s_PDPE * pdpe = ((s_PDPE*)(pml4e->PDPBA + 8*virt->PDP));
+  Print(L"WTF\n");
+  s_PDE * pde = ((s_PDE*)(pdpe->PDBA + 8*virt->PD));
+  Print(L"WTF\n");
+  s_PTE * pte = ((s_PTE*)(pde->PTBA + 8*virt->PT));
+  Print(L"WTF\n");
+  virtvalue = *(uint8_t*)(pte->PPBA + virt->offset);
+  Print(L"WTF\n");
+
+  // get the correct virtual value
+
+  Print(L"PML4 %d\n", virt->PML4);
+  Print(L"PDP  %d\n", virt->PDP);
+  Print(L"PD   %d\n", virt->PD);
+  Print(L"PT   %d\n", virt->PT);
+
+
+  Print(L"PHYSICAL: 0x%x\n", phyvalue);
+  Print(L"VIRTUAL: 0x%x\n", virtvalue);
+
+  if(phyvalue != virtvalue)
+  {
+    Print(L"Incorrect physical virtual value\n");
+    return 0;
+  }
+
+  Print(L"Correct physical virtual value\n");
+  return 1;
 }
