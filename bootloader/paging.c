@@ -46,7 +46,7 @@ uint64_t GetNextEntry()
 
     if(ret % 0x1000 != 0)
     {
-      Print("WARNING Memory not aligned\n");
+      Print(L"WARNING Memory not aligned\n");
     }
 
     return ret;
@@ -57,7 +57,7 @@ uint64_t GetNextEntry()
 
   if(ret % 0x1000 != 0)
   {
-    Print("WARNING Memory not aligned\n");
+    Print(L"WARNING Memory not aligned\n");
   }
 
   return ret;
@@ -147,7 +147,7 @@ void initCR3()
   //((s_CR3*)CR3)->base_addr = GetNextEntry();
 
 
-  int32_t pml4es = sizeof(s_PML4E);
+  //int32_t pml4es = sizeof(s_PML4E);
 
 
   //((s_CR3*)CR3)->base_addr = maxneg;
@@ -168,181 +168,189 @@ void writeCR3()
 
 void SetVirtualAddress(uint64_t phy, uint64_t virt)
 {
-  s_VPTR * tmp = (s_VPTR*)&virt;
-  s_PML4E * pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr));
+  uint64_t pml4e = CR3GetAddr(*CR3);
 
-  //Print(L"PML4 0x%d\n", tmp->PML4);
-  /*Print(L"PDP  %d\n", tmp->PDP);
-  Print(L"PD   %d\n", tmp->PD);
-  Print(L"PT   %d\n", tmp->PT);*/
-
-
-
-  //Print(L"CR3 value: 0x%llX\n", *((uint64_t*)CR3));
-  //Print(L"PML4  0x%llX\n", (uint64_t)((s_CR3*)CR3)->base_addr);
-  // won't actually work
-  if((uint64_t)pml4e == maxneg)
+  if(pml4e == maxneg)
   {
-    //Print(L"negative works\n");
-    // allocate page
-    //Print(L"New PML4\n");
-    //Print(L"CR3 value: 0x%llX\n", *((uint64_t*)CR3));
-    ((s_CR3*)CR3)->base_addr = GetNextEntry();
-    //Print(L"CR3 value: 0x%llX\n", *((uint64_t*)CR3));
-    // get the correct entry
-    pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*tmp->PML4));
+    uint64_t tmpaddr = GetNextEntry();
+
+    *CR3 &= CR3_ERASE;
+    *CR3 |= CR3SetAddr(tmpaddr);
+
+
+    pml4e &= PE_ERASE;
+    pml4e = tmpaddr;
 
     for(int i = 0; i < 512; ++i)
     {
-      ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*i))->PDPBA = maxneg;
+      *(((uint64_t*)pml4e) + i) = 0;
+      *(((uint64_t*)pml4e) + i) |= SetAddr(maxneg);
     }
 
-    //bootloader_memset(pml4e, 8, 0x0);
-    pml4e->PDPBA =  maxneg;
   }
 
-  pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*tmp->PML4));
+  pml4e = (uint64_t)(((uint64_t*)pml4e) + GetPML4Offset(virt));
 
 
-  //if(pml4e->P == 0)
+  if(((*(uint64_t*)pml4e) & PE_P) == 0x0ull)
   {
     // initialize the page
-    pml4e->P = 1;
-    pml4e->RW = 1;
-    pml4e->US = 1;
-    pml4e->PWT = 1;
-    pml4e->PCD = 1;
-    pml4e->PS = 0;
-    pml4e->NX = 0;
+    (*(uint64_t*)pml4e) |= PE_P;
+    (*(uint64_t*)pml4e) |= PE_RW;
+    (*(uint64_t*)pml4e) |= PE_US;
+    (*(uint64_t*)pml4e) |= PE_PWT;
+    (*(uint64_t*)pml4e) |= PE_PCD;
   }
 
-  s_PDPE * pdpe = ((s_PDPE*)((s_PML4E*)(pml4e->PDPBA)));
-  if((uint64_t)pdpe == maxneg)
+  uint64_t pdpe = GetAddr(*(uint64_t*)pml4e);
+
+  //Print(L"PDPE 0x%llx\n", pdpe);
+
+  if(pdpe == maxneg)
   {
-    //Print(L"New PDP\n");
-    ((s_PML4E*)pml4e)->PDPBA = GetNextEntry();
-    pdpe = ((s_PDPE*)(pml4e->PDPBA + 8*tmp->PDP));
+    uint64_t tmpaddr = GetNextEntry();
+
+    *(uint64_t*)pml4e &= PE_ERASE;
+    *(uint64_t*)pml4e |= SetAddr(tmpaddr);
+
+
+    pdpe &= PE_ERASE;
+    pdpe = tmpaddr;
 
     for(int i = 0; i < 512; ++i)
     {
-      ((s_PDPE*)(pml4e->PDPBA + 8*i))->PDBA = maxneg;
+      *(((uint64_t*)pdpe) + i) = 0;
+      *(((uint64_t*)pdpe) + i) |= SetAddr(maxneg);
     }
 
-    pdpe->PDBA =  maxneg;
   }
 
-  pdpe = (s_PDPE*)(pml4e->PDPBA + 8*tmp->PDP);
+  pdpe = (uint64_t)(((uint64_t*)pdpe) + GetPDPOffset(virt));
 
-
-  //if(pdpe->P == 0)
+  if(((*(uint64_t*)pdpe) & PE_P) == 0x0ull)
   {
-    pdpe->P = 1;
-    pdpe->RW = 1;
-    pdpe->US = 1;
-    pdpe->PWT = 1;
-    pdpe->PCD = 1;
-    pdpe->PS = 0;
-    pdpe->NX = 0;
+    (*(uint64_t*)pdpe) |= PE_P;
+    (*(uint64_t*)pdpe) |= PE_RW;
+    (*(uint64_t*)pdpe) |= PE_US;
+    (*(uint64_t*)pdpe) |= PE_PWT;
+    (*(uint64_t*)pdpe) |= PE_PCD;
   }
 
-  s_PDE * pde = ((s_PDE*)(pdpe->PDBA));
-  if((uint64_t)pde == maxneg)
-  {
-    //Print(L"New PD\n");
-    ((s_PDPE*)pdpe)->PDBA = GetNextEntry();
-    pde = (s_PDE*)(pdpe->PDBA + 8*tmp->PD);
+  //Print(L"PDPE 0x%llx\n", *(uint64_t*)pdpe);
 
-    // need to initialize PTBA to maxneg for all of the 512 entries
+  uint64_t pde = GetAddr(*(uint64_t*)pdpe);
+
+  //Print(L"PDE 0x%llx\n", pde);
+
+  if(pde == maxneg)
+  {
+    uint64_t tmpaddr = GetNextEntry();
+
+    *(uint64_t*)pdpe &= PE_ERASE;
+    *(uint64_t*)pdpe |= SetAddr(tmpaddr);
+
+
+    pde &= PE_ERASE;
+    pde = tmpaddr;
 
     for(int i = 0; i < 512; ++i)
     {
-      ((s_PDE*)(pdpe->PDBA + 8*i))->PTBA = maxneg;
+      *(((uint64_t*)pde) + i) = 0;
+      *(((uint64_t*)pde) + i) |= SetAddr(maxneg);
     }
-  }
-  pde = (s_PDE*)(pdpe->PDBA + 8*tmp->PD);
 
-  //if(pde->P == 0)
+  }
+
+  pde = (uint64_t)(((uint64_t*)pde) + GetPDOffset(virt));
+
+  if(((*(uint64_t*)pde) & PE_P) == 0x0ull)
   {
-    pde->P = 1;
-    pde->RW = 1;
-    pde->US = 1;
-    pde->PWT = 1;
-    pde->PCD = 1;
-    //pde->PS = 0;
-    pde->NX = 0;
+    (*(uint64_t*)pde) |= PE_P;
+    (*(uint64_t*)pde) |= PE_RW;
+    (*(uint64_t*)pde) |= PE_US;
+    (*(uint64_t*)pde) |= PE_PWT;
+    (*(uint64_t*)pde) |= PE_PCD;
   }
 
-  s_PTE * pte = ((s_PTE*)((s_PDE*)pde->PTBA));
+  uint64_t pte = GetAddr(*(uint64_t*)pde);
 
-  if((uint64_t)pte == maxneg)
+  //Print(L"PDPE 0x%llx\n", pdpe);
+
+  if(pte == maxneg)
   {
-    //Print(L"New PT\n");
-    pde->PTBA = GetNextEntry();
-  }
-  pte = (s_PTE*)(pde->PTBA + 8*tmp->PT);
+    uint64_t tmpaddr = GetNextEntry();
 
-  //if(pte->P == 0)
+    *(uint64_t*)pde &= PE_ERASE;
+    *(uint64_t*)pde |= SetAddr(tmpaddr);
+
+
+    pte &= PE_ERASE;
+    pte = tmpaddr;
+
+    for(int i = 0; i < 512; ++i)
+    {
+      *(((uint64_t*)pte) + i) = 0;
+      //*(((uint64_t*)pte) + i) |= SetAddr(maxneg);
+    }
+
+  }
+
+  pte = (uint64_t)(((uint64_t*)pte) + GetPTOffset(virt));
+
+  if(((*(uint64_t*)pte) & PE_P) == 0x0ull)
   {
-    pte->P = 1;
-    pte->RW = 1;
-    pte->US = 1;
-    pte->PWT = 1;
-    pte->PCD = 1;
-    pte->G = 0;
-    pte->NX = 0;
-    pte->PPBA = phy & 0xFFFFFFF000; // not actually phy directly, but the offset into the 4KB page
+    (*(uint64_t*)pte) |= PE_P;
+    (*(uint64_t*)pte) |= PE_RW;
+    (*(uint64_t*)pte) |= PE_US;
+    (*(uint64_t*)pte) |= PE_PWT;
+    (*(uint64_t*)pte) |= PE_PCD;
+    (*(uint64_t*)pte) |= SetAddr(MaskPhyAddr(phy));
   }
 
-  /*Print(L"CR3 value: 0x%llX\n", *(uint64_t*)(((s_CR3*)CR3)->base_addr));
-  Print(L"PML4 value: 0x%llX\n", *(uint64_t*)(((s_PML4E*)pml4e)->PDPBA));
-  Print(L"PDP value: 0x%llX\n", *(uint64_t*)(((s_PDPE*)pdpe)->PDBA));
-  Print(L"PD value: 0x%llX\n", *(uint64_t*)(((s_PDE*)pde)->PTBA));
-  Print(L"PT value: 0x%llX\n", *(uint64_t*)(((s_PTE*)pte)->PPBA));*/
+
+  //Print(L"PTE mapping 0x%llx\n", (*(uint64_t*)pte));
+
+  //Print(L"CR3 value: 0x%llX\n", *CR3);
+  //Print(L"PML4 value: 0x%llX\n", *(uint64_t*)pml4e);
+  //Print(L"PDP value: 0x%llX\n", *(uint64_t*)pdpe);
+  //Print(L"PD value: 0x%llX\n", *(uint64_t*)pde);
+  //Print(L"PT value: 0x%llX\n", *(uint64_t*)pte);
 }
 
 uint8_t checkIdentity(uint64_t phy)
 {
-  s_VPTR * virt = &phy;
   //uint8_t phyvalue = (uint8_t)(*(uint64_t*)phy);
   uint8_t phyvalue = *(uint64_t*)phy;
   uint8_t virtvalue;
-  s_PML4E * pml4e = ((s_PML4E*)(((s_CR3*)CR3)->base_addr + 8*virt->PML4));
+  uint64_t pml4e = CR3GetAddr(*CR3);// + GetPML4Offset(phy);
+  pml4e = *(((uint64_t*)pml4e) + GetPML4Offset(phy));
+  uint64_t pdpe = *(((uint64_t*)GetAddr(pml4e)) + GetPDPOffset(phy));
+  uint64_t pde  = *(((uint64_t*)GetAddr(pdpe)) + GetPDOffset(phy));
+  uint64_t pte  = *(((uint64_t*)GetAddr(pde)) + GetPTOffset(phy));
+  uint64_t pteptr = ((GetAddr(pte)) + GetPhyOffset(phy));
+  virtvalue = ((GetAddr(pte)) + GetPhyOffset(phy));
 
-  s_PDPE * pdpe = ((s_PDPE*)(pml4e->PDPBA + 8*virt->PDP));
-  s_PDE * pde = ((s_PDE*)(pdpe->PDBA + 8*virt->PD));
-  s_PTE * pte = ((s_PTE*)(pde->PTBA + 8*virt->PT));
-  virtvalue = *(uint8_t*)(pte->PPBA + virt->offset);
+  //s_PDPE * pdpe = ((s_PDPE*)(pml4e->PDPBA + 8*virt->PDP));
+  //s_PDE * pde = ((s_PDE*)(pdpe->PDBA + 8*virt->PD));
+  //s_PTE * pte = ((s_PTE*)(pde->PTBA + 8*virt->PT));
+  //virtvalue = *(uint8_t*)(pte->PPBA + virt->offset);
 
   // get the correct virtual value
 
   Print(L"ADDR: 0x%llx\n", phy);
 
-  s_PML4E testpml4e;
-  testpml4e.A = 0;
-  testpml4e.available = 0;
-  testpml4e.AVL = 0;
-  testpml4e.MBZ = 0;
-  testpml4e.NX = 0;
-  testpml4e.P = 1;
-  testpml4e.PCD = 0;
-  testpml4e.PDPBA = phy & 0xFFFFFFF000;
-  testpml4e.PS = 0;
-  testpml4e.PWT = 0;
-  testpml4e.RW = 0;
-  testpml4e.US = 0;
+  Print(L"PML4E 0x%llx\n", pml4e);
+  Print(L"PDPE  0x%llx\n", pdpe);
+  Print(L"PDE   0x%llx\n", pde);
+  Print(L"PTE   0x%llx\n", pte);
+  Print(L"pageentry: 0x%llx\n", pteptr);
+  Print(L"PPBA  0x%llx\n", GetAddr(pte));
 
-  Print(L"TestPML4E 0x%llx\n", testpml4e);
-  Print(L"PML4E 0x%llx\n", (uint64_t)pml4e);
-  Print(L"Present: 0x%llx\n", ((uint64_t)pml4e) & 0x1);
-  Print(L"PDPE  0x%llx\n", (uint64_t)pdpe);
-  Print(L"PDE   0x%llx\n", (uint64_t)pde);
-  Print(L"PTE   0x%llx\n", (uint64_t)pte);
-  Print(L"PPBA  0x%llx\n", pte->PPBA);
-
-  Print(L"PML4 %d\n", virt->PML4);
-  Print(L"PDP  %d\n", virt->PDP);
-  Print(L"PD   %d\n", virt->PD);
-  Print(L"PT   %d\n", virt->PT);
+  Print(L"PML4 %d\n", GetPML4Offset(phy));
+  Print(L"PDP  %d\n", GetPDPOffset(phy));
+  Print(L"PD   %d\n", GetPDOffset(phy));
+  Print(L"PT   %d\n", GetPTOffset(phy));
+  Print(L"PHY  0x%llx\n", GetPhyOffset(phy));
 
 
   Print(L"PHYSICAL: 0x%x\n", phyvalue);

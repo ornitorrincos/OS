@@ -51,42 +51,50 @@ typedef struct __attribute__((packed))
 } s_CR3;
 
 // Virtual Pointer
-#define VP_OFF_PHY   0
-#define VP_OFF_PT   12
-#define VP_OFF_PD   21
-#define VP_OFF_PDP  30
-#define VP_OFF_PML4 39
-#define VP_OFF_SIGN 48
+#define VP_OFF_PHY   0ull
+#define VP_OFF_PT   12ull
+#define VP_OFF_PD   21ull
+#define VP_OFF_PDP  30ull
+#define VP_OFF_PML4 39ull
+#define VP_OFF_SIGN 48ull
 
-#define GetPhyOffset(x)  (x & 0xFFF)
-#define GetPTOffset(x)   ((x >> VP_OFF_PT) & 0x1FF)
-#define GetPDOffset(x)   ((x >> VP_OFF_PD) & 0x1FF)
-#define GetPDPOffset(x)  ((x >> VP_OFF_PDP) & 0x1FF)
-#define GetPML4Offset(x) ((x > VP_OFF_PML4) & 0x1FF)
-#define GetSignOffset(x) ((x > VP_OFF_SIGN) & 0xFFFF)
+#define GetPhyOffset(x)  (x & 0xFFFull)
+#define GetPTOffset(x)   ((x >> VP_OFF_PT) & 0x1FFull)
+#define GetPDOffset(x)   ((x >> VP_OFF_PD) & 0x1FFull)
+#define GetPDPOffset(x)  ((x >> VP_OFF_PDP) & 0x1FFull)
+#define GetPML4Offset(x) ((x >> VP_OFF_PML4) & 0x1FFull)
+#define GetSignOffset(x) ((x >> VP_OFF_SIGN) & 0xFFFFull)
 
 
 // CR3
-#define CR3_PWT (1 << 3)
-#define CR3_PCD (1 << 4)
-#define CR3_ADDR_SHIFT 12
+#define CR3_PWT (1ull << 3ull)
+#define CR3_PCD (1ull << 4ull)
+#define CR3_ADDR_SHIFT 12ull
+#define CR3_ERASE (~(maxneg << CR3_ADDR_SHIFT))
+
+#define CR3GetAddr(x) ((x >> CR3_ADDR_SHIFT) & maxneg)
+#define CR3SetAddr(x) ((x & maxneg) << CR3_ADDR_SHIFT)
 
 // Page Entry
-#define PE_P   (1 <<  0)
-#define PE_RW  (1 <<  1)
-#define PE_US  (1 <<  2)
-#define PE_PWT (1 <<  3)
-#define PE_PCD (1 <<  4)
-#define PE_A   (1 <<  5)
-#define PE_D   (1 <<  6)
-#define PE_PS  (1 <<  7)
-#define PE_G   (1 <<  8)
-#define PE_BA  (1 << 12)
-#define PE_NX  (1 << 63)
+#define PE_P   (1ull <<  0ull)
+#define PE_RW  (1ull <<  1ull)
+#define PE_US  (1ull <<  2ull)
+#define PE_PWT (1ull <<  3ull)
+#define PE_PCD (1ull <<  4ull)
+#define PE_A   (1ull <<  5ull)
+#define PE_D   (1ull <<  6ull)
+#define PE_PS  (1ull <<  7ull)
+#define PE_G   (1ull <<  8ull)
+#define PE_BA  (1ull << 12ull)
+#define PE_NX  (1ull << 63ull)
+#define PE_ADDR_SHIFT 12ull
+#define PE_ERASE      (~(maxneg << PE_ADDR_SHIFT))
 
 #define MaskTable(x)   (x & maxneg)
-#define MaskPhyAddr(x) (x & 0xFFFFFFF000)
-#define OffsetAddr(x)  (x << PE_BA)
+#define MaskPhyAddr(x) (x & 0xFFFFFFF000ull)
+#define SetAddr(x)  (x << PE_ADDR_SHIFT)
+#define GetAddr(x)  (x >> PE_ADDR_SHIFT)
+
 
 
 // PML4E
