@@ -94,6 +94,7 @@ typedef struct __attribute__((packed))
 #define MaskPhyAddr(x) (x & 0xFFFFFFF000ull)
 #define SetAddr(x)  (x << PE_ADDR_SHIFT)
 #define GetAddr(x)  (x >> PE_ADDR_SHIFT)
+//#define GetAddr(x)  (x & ~0xFFFull)
 
 
 

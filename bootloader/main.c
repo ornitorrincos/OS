@@ -9,6 +9,7 @@
 #include "memorytypes.h"
 #include "paging_struct.h"
 #include "paging.h"
+#include "other.h"
 
 // pixel struct information(hardcoded to what qemu exposes)
 typedef struct _Pixel
@@ -56,12 +57,13 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   uefi_call_wrapper(ST->ConOut->ClearScreen, 1, ST->ConOut); // clear the screen
   Pixel * fb = SetVideoMode(1024, 768, 32);
 
+  PrintImageAddr(ImageHandle);
 
   // some uefi implementations time out with their default setting, disable the timer
   BS->SetWatchdogTimer(0, 0, 0, NULL);
    
 
-  Print(L"Firmware Vendor: %s Rev: 0x%08x\n", ST->FirmwareVendor, ST->FirmwareRevision);
+  //Print(L"Firmware Vendor: %s Rev: 0x%08x\n", ST->FirmwareVendor, ST->FirmwareRevision);
 
   //while(1){};
 
@@ -76,7 +78,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   ELF * kernel = LoadFile(L"kernel.bin", MEM_KERNEL); // we set the memory type to the one from the kernel
 
   // print general information about the kers_CR3nel elf header
-  PrintELFInfo(kernel);
+  //PrintELFInfo(kernel);
 
 
 
@@ -87,13 +89,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   EFI_STATUS memret     = EFI_SUCCESS;
   EFI_STATUS bootstatus = EFI_SUCCESS;
 
-  EFI_STATUS memst = uefi_call_wrapper(BS->GetMemoryMap, 5, &mapsize, map, &mapkey, &descriptorsize, &version);
+  uefi_call_wrapper(BS->GetMemoryMap, 5, &mapsize, map, &mapkey, &descriptorsize, &version);
 
-
-  if(memst == EFI_BUFFER_TOO_SMALL)
-  {
-    Print(L"MapSize read successful\n");
-  }
 
   // as the allocation will probably modify the memory map allocate 4kb more(one page)
   // so that the new memory map probably fits
@@ -101,21 +98,9 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   mapsize = allocsize;
 
-  EFI_STATUS allocst = uefi_call_wrapper(BS->AllocatePool, 3, EfiLoaderData, allocsize, (void**)&map);
+  uefi_call_wrapper(BS->AllocatePool, 3, EfiLoaderData, allocsize, (void**)&map);
 
-  if(allocst == EFI_SUCCESS)
-  {
-    Print(L"Allocated Space for Memory Map\n");
-  }
-
-
-
-  memst = uefi_call_wrapper(BS->GetMemoryMap, 5, &mapsize, map, &mapkey, &descriptorsize, &version);
-
-  if(memst == EFI_SUCCESS)
-  {
-    Print(L"MemoryMap Aquired\n");
-  }
+  uefi_call_wrapper(BS->GetMemoryMap, 5, &mapsize, map, &mapkey, &descriptorsize, &version);
 
   // set virtual addresses in here
   // try some paging
@@ -129,7 +114,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   printCR3();
 
-
+/*
   for(int entry = 0; entry < elements; ++entry)
   {
     mapiterator = (EFI_MEMORY_DESCRIPTOR*)(((EFI_PHYSICAL_ADDRESS)mapiterator + descriptorsize));
@@ -140,7 +125,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
       SetVirtualAddress(page, page);
       page += 0x1000;
     }
-  }
+  }*/
   //printCR3();
   //while(address < max)
   //{
@@ -149,16 +134,16 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   //}
   //SetVirtualAddress(0x1000, 0x1000);
   // lets try setting up some virtual addresses at the end
+  SetVirtualAddress(0, 0);
   SetVirtualAddress(0, 0-4*1024);
   //printCR3();
 
   //Print(L"kernel: 0x%llx\n", kernel);
   //checkIdentity((uint64_t)kernel);
-  checkIdentity(0x000000000676336full);
+  //checkIdentity(0x000000000676336cull);
 
 
   // the call to exit boot services tells the firmware we are ready to take control of the system
-  Print(L"Calling ExitBootServices\n");
 
   // never ever call Print after the next line
   // after the first call boot services can be partially disabled
@@ -222,7 +207,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     }
   }
 
-  // we should now set soe virtual mapping
+  // we should now set s  Print(L"Calling ExitBootServices\n");oe virtual mapping
   //BootDisableInterrupts();
 
 
