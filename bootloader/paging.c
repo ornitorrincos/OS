@@ -140,7 +140,7 @@ void initCR3()
 
   *CR3 |= CR3_PCD;
   *CR3 |= CR3_PWT;
-  *CR3 |=(maxneg << CR3_ADDR_SHIFT);
+  //*CR3 |=(maxneg << CR3_ADDR_SHIFT);
 
   //((s_CR3*)CR3)->PCD = 1;
   //((s_CR3*)CR3)->PWT = 1;
@@ -168,198 +168,80 @@ void writeCR3()
 
 void SetVirtualAddress(uint64_t phy, uint64_t virt)
 {
-  //uint64_t pml4e = CR3GetAddr(*CR3);
-  uint64_t pml4e = MaskPhyAddr(*CR3);
+  uint64_t* pml4 = (uint64_t*)MaskPhyAddr(*CR3);
 
-  if(pml4e == 0xFFFFFFF000ull)//maxneg)
-  {
-
-
-    uint64_t tmpaddr = GetNextEntry();
-
-    *CR3 &= CR3_ERASE;
-    //*CR3 |= CR3SetAddr(tmpaddr);
-    *CR3 |= MaskPhyAddr(tmpaddr);
+    // Get the offsets to each page table
+    uint64_t pml4offset = GetPML4Offset(virt);
+    uint64_t pdpoffset = GetPDPOffset(virt);
+    uint64_t pdoffset = GetPDOffset(virt);
+    uint64_t ptoffset = GetPTOffset(virt);
 
 
-    pml4e &= PE_ERASE;
-    pml4e = tmpaddr;
+    uint64_t pml4e = pml4[pml4offset];
 
-    Print(L"maxneg: 0x%llX\n", maxneg);
-
-    for(int i = 0; i < 512; ++i)
+    // if not present, allocate the page
+    if((pml4e & PE_P) == 0x0ull)
     {
-      *(((uint64_t*)pml4e) + i) = 0;
-      *(((uint64_t*)pml4e) + i) |= SetAddr(maxneg);
+      //assign the physical addr, and clear all to zero
+      uint64_t tmpaddr = GetNextEntry();
+      pml4e |= MaskPhyAddr(tmpaddr);
 
+      // initialize the page
+      pml4e |= PE_P;
+      pml4e |= PE_RW;
+      pml4e |= PE_US;
+      pml4e |= PE_PWT;
+      pml4e |= PE_PCD;
     }
-    Print(L"PDPE entry 1: 0x%llX\n", *(((uint64_t*)pml4e) + 1));
-  }
+    // assign the values to the array
+    pml4[pml4offset] = pml4e;
 
-  pml4e = (uint64_t)(((uint64_t*)pml4e) + GetPML4Offset(virt));
-  //Print(L"PML4E 0x%llX\n", pml4e);
 
-  if(((*(uint64_t*)pml4e) & PE_P) == 0x0ull)
-  {
-    // initialize the page
-    (*(uint64_t*)pml4e) |= PE_P;
-    (*(uint64_t*)pml4e) |= PE_RW;
-
-    if(GetPDPOffset(virt) == 0)
+    uint64_t pdpe = ((uint64_t*)MaskPhyAddr(pml4e))[pdpoffset];
+    if((pdpe & PE_P) == 0x0ull)
     {
-      //Print(L"Addr: 0x%llX\n", virt);
-      //Print(L"PDPE offset:: %lld\n", GetPDPOffset(virt));
-      //Print(L"PDPE offset:: 0x%llX\n", GetPDPOffset(virt));
-      //Print(L"PDPE 1: 0x%llX\n", pdpe);
+      // page not present
+      uint64_t tmpaddr = GetNextEntry();
+      pdpe |= MaskPhyAddr(tmpaddr);
+
+      pdpe |= PE_P;
+      pdpe |= PE_RW;
+      pdpe |= PE_US;
+      pdpe |= PE_PWT;
+      pdpe |= PE_PCD;
     }
-    (*(uint64_t*)pml4e) |= PE_US;
-    (*(uint64_t*)pml4e) |= PE_PWT;
-    (*(uint64_t*)pml4e) |= PE_PCD;
-  }
+    ((uint64_t*)MaskPhyAddr(pml4e))[pdpoffset] = pdpe;
 
-  //Print(L"PDPE offset:: 0x%llX\n", GetPDPOffset(virt));
+    uint64_t pde = ((uint64_t*)MaskPhyAddr(pdpe))[pdoffset];
 
-  // need to get this right
-  uint64_t pdpe = *((uint64_t*)(MaskPhyAddr(pml4e) + GetPDPOffset(virt)*8));
-  // need to reorganize the rest of the code
-
-
-  if(MaskPhyAddr(pdpe) == 0xFFFFFFF000ull)//maxneg)
-  {
-    Print(L"PDPE CHECK OK\n");
-    uint64_t tmpaddr = GetNextEntry();
-
-    *(uint64_t*)pml4e &= PE_ERASE;
-    //*(uint64_t*)pml4e |= SetAddr(tmpaddr);
-    *(uint64_t*)pml4e |= MaskPhyAddr(tmpaddr);
-
-
-    pdpe &= PE_ERASE;
-    pdpe = tmpaddr;
-
-    for(int i = 0; i < 512; ++i)
+    if((pde & PE_P) == 0x0ull)
     {
-      *(((uint64_t*)pdpe) + i) = 0;
-      *(((uint64_t*)pdpe) + i) |= SetAddr(maxneg);
+      uint64_t tmpaddr = GetNextEntry();
+
+      pde |= MaskPhyAddr(tmpaddr);
+
+      pde |= PE_P;
+      pde |= PE_RW;
+      pde |= PE_US;
+      pde |= PE_PWT;
+      pde |= PE_PCD;
     }
-  }
+    ((uint64_t*)MaskPhyAddr(pdpe))[pdoffset] = pde;
 
+    uint64_t pte = ((uint64_t*)MaskPhyAddr(pde))[ptoffset];
 
-  if(((*(uint64_t*)pdpe) & PE_P) == 0x0ull)
-  {
-    (*(uint64_t*)pdpe) |= PE_P;
-    (*(uint64_t*)pdpe) |= PE_RW;
-    (*(uint64_t*)pdpe) |= PE_US;
-    (*(uint64_t*)pdpe) |= PE_PWT;
-    (*(uint64_t*)pdpe) |= PE_PCD;
-  }
+    // need to make the pt entry
 
-
-
-  //Print(L"PDPE 0x%llx\n", *(uint64_t*)pdpe);
-
-  //uint64_t pde = GetAddr(*(uint64_t*)pdpe);
-  uint64_t pde = *((uint64_t*)(MaskPhyAddr(pdpe) + GetPDOffset(virt)*8));
-
-
-  //Print(L"PDE 0x%llx\n", pde);
-
-  //Print(L"pml4: %d pdpe: %d pde: %d pte: %d\n", GetPML4Offset(virt), GetPDPOffset(virt), GetPDOffset(virt), GetPTOffset(virt));
-
-  if(MaskPhyAddr(pde) == 0xFFFFFFF000ull)//maxneg)
-  {
-    Print(L"PDE CHECK OK\n");
-    Print(L"pml4: %d pdpe: %d pde: %d pte: %d\n", GetPML4Offset(virt), GetPDPOffset(virt), GetPDOffset(virt), GetPTOffset(virt));
-
-    if(GetPDOffset(virt) != 0)
+    if((pte & PE_P) == 0x0ull)
     {
-      while(1){};
+      pte |= PE_P;
+      pte |= PE_RW;
+      pte |= PE_US;
+      pte |= PE_PWT;
+      pte |= PE_PCD;
+      pte |= MaskPhyAddr(phy);
     }
-
-    uint64_t tmpaddr = GetNextEntry();
-
-    *(uint64_t*)pdpe &= PE_ERASE;
-    //*(uint64_t*)pdpe |= SetAddr(tmpaddr);
-    *(uint64_t*)pdpe |= MaskPhyAddr(tmpaddr);
-
-
-    pde &= PE_ERASE;
-    pde = tmpaddr;
-
-    for(int i = 0; i < 512; ++i)
-    {
-      *(((uint64_t*)pde) + i) = 0;
-      *(((uint64_t*)pde) + i) |= SetAddr(maxneg);
-    }
-
-  }
-
-
-
-  //pde = (uint64_t)(((uint64_t*)pde) + GetPDOffset(virt));
-
-  if(((*(uint64_t*)pde) & PE_P) == 0x0ull)
-  {
-    (*(uint64_t*)pde) |= PE_P;
-    (*(uint64_t*)pde) |= PE_RW;
-    (*(uint64_t*)pde) |= PE_US;
-    (*(uint64_t*)pde) |= PE_PWT;
-    (*(uint64_t*)pde) |= PE_PCD;
-  }
-
-  uint64_t pte = *((uint64_t*)(MaskPhyAddr(pde) + GetPTOffset(virt)*8));
-
-
-
-  //Print(L"PDPE 0x%llx\n", pdpe);
-
-  if(MaskPhyAddr(pte) == 0xFFFFFFF000ull)//maxneg)
-  {
-    //Print(L"PTE CHECK OK\n");
-    uint64_t tmpaddr = GetNextEntry();
-
-    *(uint64_t*)pde &= PE_ERASE;
-    //*(uint64_t*)pde |= SetAddr(tmpaddr);
-    *(uint64_t*)pde |= MaskPhyAddr(tmpaddr);
-
-
-    pte &= PE_ERASE;
-    pte = tmpaddr;
-
-    for(int i = 0; i < 512; ++i)
-    {
-      *(((uint64_t*)pte) + i) = 0;
-      *(((uint64_t*)pte) + i) |= SetAddr(maxneg);
-    }
-
-  }
-
-  //pte = (uint64_t)(((uint64_t*)pte) + GetPTOffset(virt));
-
-  if(((*(uint64_t*)pte) & PE_P) == 0x0ull)
-  {
-    (*(uint64_t*)pte) |= PE_P;
-    (*(uint64_t*)pte) |= PE_RW;
-    (*(uint64_t*)pte) |= PE_US;
-    (*(uint64_t*)pte) |= PE_PWT;
-    (*(uint64_t*)pte) |= PE_PCD;
-    //(*(uint64_t*)pte) |= SetAddr(MaskPhyAddr(phy));
-    (*(uint64_t*)pte) |= MaskPhyAddr(phy);
-  }
-
-
-  /*{
-  Print(L"Done while\n");
-  while(1){};
-  }*/
-
-  //Print(L"PTE mapping 0x%llx\n", (*(uint64_t*)pte));
-
-  //Print(L"CR3 value: 0x%llX\n", *CR3);
-  //Print(L"PML4 value: 0x%llX\n", *(uint64_t*)pml4e);
-  //Print(L"PDP value: 0x%llX\n", *(uint64_t*)pdpe);
-  //Print(L"PD value: 0x%llX\n", *(uint64_t*)pde);
-  //Print(L"PT value: 0x%llX\n", *(uint64_t*)pte);
+    ((uint64_t*)MaskPhyAddr(pde))[ptoffset] = pte;
 }
 
 uint8_t checkIdentity(uint64_t phy)

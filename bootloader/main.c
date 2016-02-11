@@ -114,6 +114,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   printCR3();
 
+  Print(L"elements: %d\n", elements);
 
   for(int entry = 0; entry < elements; ++entry)
   {
@@ -124,6 +125,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     Print(L"page: 0x%llX\n", page);
     for(int pageentry = 0; pageentry < mapiterator->NumberOfPages; pageentry++)
     {
+      //Print(L"SetAddr\n");
       SetVirtualAddress(page, page);
       page += 0x1000;
     }
@@ -137,7 +139,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   //SetVirtualAddress(0x1000, 0x1000);
   // lets try setting up some virtual addresses at the end
   //SetVirtualAddress(0, 0);
-  //SetVirtualAddress(0, 0-4*1024);
+  SetVirtualAddress(0, 0-4*1024);
   //printCR3();
 
   //Print(L"kernel: 0x%llx\n", kernel);
@@ -231,6 +233,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   kernel = (ELF*)0x280000000; // correct virtual pointer to 10GB (Sign: 0  PML4: 0  PDP:10  PD:0  Page:0)
 
   kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
+
+  writeCR3();
 
   // disable interrupts
   __asm__("cli");
