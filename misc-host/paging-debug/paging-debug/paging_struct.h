@@ -39,7 +39,8 @@ typedef struct _CPUIDsizes
 
 // CR3
 // the contents of this struct go into CR3
-typedef struct __attribute__((packed))
+#pragma pack(1)
+typedef struct
 {
   uint64_t reserved1:3;
   uint64_t PWT:1;        // page level writethough
@@ -90,7 +91,7 @@ typedef struct __attribute__((packed))
 #define PE_ERASE      (~(maxneg << PE_ADDR_SHIFT))
 
 #define MaskTable(x)   (x & maxneg)
-#define MaskPhyAddr(x) (x & 0xFFFFFFF000ull)
+#define MaskPhyAddr(x) (x & maxnegcomp)
 #define SetAddr(x)  (x << PE_ADDR_SHIFT)
 #define GetAddr(x)  (x >> PE_ADDR_SHIFT)
 //#define GetAddr(x)  (x & ~0xFFFull)
@@ -99,7 +100,7 @@ typedef struct __attribute__((packed))
 
 // PML4E
 
-typedef struct __attribute__((packed))
+typedef struct
 {
   uint64_t P:1; // present bit
   uint64_t RW:1; // read write (if 0 write protected)
@@ -119,7 +120,7 @@ typedef struct __attribute__((packed))
 
 // PDPE
 
-typedef struct __attribute__((packed))
+typedef struct
 {
   uint64_t P:1;
   uint64_t RW:1;
@@ -138,7 +139,7 @@ typedef struct __attribute__((packed))
 
 // PDE
 
-typedef struct __attribute__((packed))
+typedef struct
 {
   uint64_t P:1;
   uint64_t RW:1;
@@ -157,7 +158,7 @@ typedef struct __attribute__((packed))
 
 // PTE
 
-typedef struct __attribute__((packed))
+typedef struct
 {
   uint64_t P:1;
   uint64_t RW:1;
@@ -174,7 +175,7 @@ typedef struct __attribute__((packed))
   uint64_t NX:1;
 } s_PTE;
 
-typedef struct __attribute__((packed))
+typedef struct
 {
   uint64_t offset:12;
   uint64_t PT:9;
