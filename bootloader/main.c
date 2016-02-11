@@ -114,18 +114,20 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   printCR3();
 
-/*
+
   for(int entry = 0; entry < elements; ++entry)
   {
     mapiterator = (EFI_MEMORY_DESCRIPTOR*)(((EFI_PHYSICAL_ADDRESS)mapiterator + descriptorsize));
     uint64_t page = mapiterator->PhysicalStart;
 
+
+    Print(L"page: 0x%llX\n", page);
     for(int pageentry = 0; pageentry < mapiterator->NumberOfPages; pageentry++)
     {
       SetVirtualAddress(page, page);
       page += 0x1000;
     }
-  }*/
+  }
   //printCR3();
   //while(address < max)
   //{
@@ -134,8 +136,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   //}
   //SetVirtualAddress(0x1000, 0x1000);
   // lets try setting up some virtual addresses at the end
-  SetVirtualAddress(0, 0);
-  SetVirtualAddress(0, 0-4*1024);
+  //SetVirtualAddress(0, 0);
+  //SetVirtualAddress(0, 0-4*1024);
   //printCR3();
 
   //Print(L"kernel: 0x%llx\n", kernel);
@@ -233,7 +235,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   // disable interrupts
   __asm__("cli");
 
-  writeCR3();
+  //writeCR3();
   while(1){}
 
   __asm__("hlt");
