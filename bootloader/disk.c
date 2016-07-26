@@ -15,7 +15,7 @@ UINTN EFIAPI ceil2(float x)
   return ret;
 }
 
-void * EFIAPI LoadFile(CHAR16 * name, UINTN memtype)
+void * EFIAPI LoadFile(CHAR16 * name, UINTN memtype, int32_t* filesize)
 {
   // ask for the protocol to handle the filesystem
   EFI_GUID EfiSimpleFileSystemGuid = SIMPLE_FILE_SYSTEM_PROTOCOL;
@@ -64,6 +64,8 @@ void * EFIAPI LoadFile(CHAR16 * name, UINTN memtype)
   {
     Print(L"FileSize: %d\n", info->FileSize);
   }
+
+  *filesize = info->FileSize;
 
   UINTN size = info->FileSize;
   void * data = NULL;

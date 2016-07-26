@@ -75,7 +75,9 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     Print(L"Os Data allocation failed\n");
   }
 
-  ELF * kernel = LoadFile(L"kernel.bin", MEM_KERNEL); // we set the memory type to the one from the kernel
+  int32_t kernel_size;
+
+  ELF * kernel = LoadFile(L"kernel.bin", MEM_KERNEL, &kernel_size); // we set the memory type to the one from the kernel
 
   // print general information about the kers_CR3nel elf header
   //PrintELFInfo(kernel);
@@ -114,7 +116,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   printCR3();
 
-  Print(L"elements: %d\n", elements);
+  //Print(L"elements: %d\n", elements);
 
   for(int entry = 0; entry < elements; ++entry)
   {
@@ -122,7 +124,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
     uint64_t page = mapiterator->PhysicalStart;
 
 
-    Print(L"page: 0x%llX\n", page);
+    //Print(L"page: 0x%llX\n", page);
     for(int pageentry = 0; pageentry < mapiterator->NumberOfPages; pageentry++)
     {
       //Print(L"SetAddr\n");
@@ -130,21 +132,23 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
       page += 0x1000;
     }
   }
-  //printCR3();
-  //while(address < max)
-  //{
-  //  SetVirtualAddress(address, address);
-  //  address += 0x1000;
-  //}
-  //SetVirtualAddress(0x1000, 0x1000);
-  // lets try setting up some virtual addresses at the end
-  //SetVirtualAddress(0, 0);
-  SetVirtualAddress(0, 0-4*1024);
+
+  // need to map the physical address the kernel is in to -2GB virtual
+  //uint64_t startvm = 0xffffffff7fffffffull;
+  uint64_t startvm = 0xffffffff80000000ull;
+  uint64_t currentvm = 0;
+
+  while(currentvm < kernel_size)
+  {
+    SetVirtualAddress((uint64_t)kernel + currentvm, startvm + currentvm);
+
+    currentvm += 0x1000;
+  }
+
   //printCR3();
 
   //Print(L"kernel: 0x%llx\n", kernel);
-  //checkIdentity((uint64_t)kernel);
-  //checkIdentity(0x000000000676336cull);
+
 
 
   // the call to exit boot services tells the firmware we are ready to take control of the system
