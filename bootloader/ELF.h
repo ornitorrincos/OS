@@ -8,31 +8,33 @@
 // Elf header struct
 typedef struct ELF
 {
-  UINT32 Magic;
-  UINT8  Class;
-  UINT8  Data;
-  UINT8  Version;
-  UINT8  OSABI;
-  UINT8  ABIVERSION;
-
-  // Padding 7 bytes
-  UINT32 Padding4;
-  UINT16 Padding2;
-  UINT8  Padding1;
-  // 4 + 2 + 1 = 7
-
-  UINT16 Machine;
-  UINT32 Version2;
-  UINT64 EntryPoint;
-  UINT64 Phoff;
-  UINT32 Flags;
-  UINT16 Ehsize;
-  UINT16 Phentsize;
-  UINT16 Phnum;
-  UINT16 Shentsize;
-  UINT16 Shnum;
-  UINT16 Shstrndx;
+  UINT8 e_ident[16];
+  UINT16 e_type;
+  UINT16 e_machine;
+  UINT32 e_version;
+  UINT64 e_entry;
+  UINT64 e_phoff;
+  UINT64 e_shoff;
+  UINT32 e_flags;
+  UINT16 e_ehsize;
+  UINT16 e_phentsize;
+  UINT16 e_phnum;
+  UINT16 e_shentsize;
+  UINT16 e_shnum;
+  UINT16 e_shstrndx;
 } ELF;
+
+typedef struct PH
+{
+  UINT32 p_type;
+  UINT32 p_flags;
+  UINT64 p_offset;
+  UINT64 p_vaddr;
+  UINT64 p_paddr;
+  UINT64 p_filesz;
+  UINT64 p_memsz;
+  UINT64 p_align;
+} PH;
 
 void EFIAPI PrintELFInfo(ELF * file);
 

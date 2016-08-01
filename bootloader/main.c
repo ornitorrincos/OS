@@ -149,7 +149,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   //Print(L"kernel: 0x%llx\n", kernel);
 
-
+  PrintELFInfo(kernel);
 
   // the call to exit boot services tells the firmware we are ready to take control of the system
 
@@ -236,7 +236,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   kernel = (ELF*)0x280000000; // correct virtual pointer to 10GB (Sign: 0  PML4: 0  PDP:10  PD:0  Page:0)
 
-  kfn kernel_jump = (void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
+  kfn kernel_jump = NULL;//(void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
 
   writeCR3();
 

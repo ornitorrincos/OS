@@ -1,10 +1,11 @@
 ENTRY(kmain)
+
 SECTIONS
 {
-    /* 0xffffffff7fffffff is the kernel virtual memory load address */
-    . = 0xffffffff7fffffff;
+    /* 0xffffffff80000000 is the kernel virtual memory load address */
+    . = 0xffffffff80000000;
 
-    .text : AT(ADDR(.text) - 0xffffffff7fffffff)
+    .text : AT(ADDR(.text) - 0xffffffff80000000)
     {
         _code = .;
         *(.text)
@@ -12,21 +13,21 @@ SECTIONS
         . = ALIGN(4096);
     }
 
-   .data : AT(ADDR(.data) - 0xffffffff7fffffff)
+   .data : AT(ADDR(.data) - 0xffffffff80000000)
    {
         _data = .;
         *(.data)
         . = ALIGN(4096);
    }
 
-   .eh_frame : AT(ADDR(.eh_frame) - 0xffffffff7fffffff)
+   .eh_frame : AT(ADDR(.eh_frame) - 0xffffffff80000000)
    {
        _ehframe = .;
        *(.eh_frame)
         . = ALIGN(4096);
    }
 
-   .bss : AT(ADDR(.bss) - 0xffffffff7fffffff)
+   .bss : AT(ADDR(.bss) - 0xffffffff80000000)
    {
        _bss = .;
        *(.bss)
