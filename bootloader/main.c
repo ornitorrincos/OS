@@ -118,7 +118,9 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   //Print(L"elements: %d\n", elements);
 
-  for(int entry = 0; entry < elements; ++entry)
+  
+
+  /*for(int entry = 0; entry < elements; ++entry)
   {
     mapiterator = (EFI_MEMORY_DESCRIPTOR*)(((EFI_PHYSICAL_ADDRESS)mapiterator + descriptorsize));
     uint64_t page = mapiterator->PhysicalStart;
@@ -131,16 +133,26 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
       SetVirtualAddress(page, page);
       page += 0x1000;
     }
+  }*/
+
+  uint64_t maxaddr = 0x0000001000000000ull;
+  for(uint64_t page = 0x0; page < maxaddr; page += 0x1000)
+  {
+    SetVirtualAddress(page, page);
   }
 
   // need to map the physical address the kernel is in to -2GB virtual
   //uint64_t startvm = 0xffffffff7fffffffull;
-  uint64_t startvm = 0xffffffff80000000ull;
+  uint64_t startvm = kernel->e_entry;
   uint64_t currentvm = 0;
+
+  PH* ph = (PH*)(((uint64_t)kernel) + kernel->e_phoff); // use this to know how much and what pages to map
+
+  kernel_size = ph->p_filesz;
 
   while(currentvm < kernel_size)
   {
-    SetVirtualAddress((uint64_t)kernel + currentvm, startvm + currentvm);
+    SetVirtualAddress((uint64_t)kernel + ph->p_offset + currentvm, startvm + currentvm);
 
     currentvm += 0x1000;
   }
@@ -234,21 +246,42 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   // after calling exit boot services we can't return to the uefi environment because it's been destroyed
   //
 
-  kernel = (ELF*)0x280000000; // correct virtual pointer to 10GB (Sign: 0  PML4: 0  PDP:10  PD:0  Page:0)
+  //kernel = (ELF*)0x280000000; // correct virtual pointer to 10GB (Sign: 0  PML4: 0  PDP:10  PD:0  Page:0)
 
-  kfn kernel_jump = NULL;//(void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
+  kfn kernel_jump = (void*)kernel->e_entry;//(void*)((EFI_PHYSICAL_ADDRESS)kernel + kernel->EntryPoint);
+
 
   writeCR3();
+  //while(1){}
+  {
+    int i = 0;
+    int j = 0;
+
+    for(i = 0; i < 256; ++i)
+    {
+      for(j = 0; j < 256; ++j)
+      {
+        Pixel p;
+        p.R = 255;
+        p.G = 255;
+        p.B = 255;
+        //p.Z = 255;
+        fb[j + 1024*i] = p;
+      }
+    }
+  }
 
   // disable interrupts
   __asm__("cli");
 
   //writeCR3();
-  while(1){}
 
-  __asm__("hlt");
+
+  //__asm__("hlt");
 
   kernel_jump(osdata);
+
+  while(1){}
 
   __asm__("hlt"); // sanity in case the kernel exists, should throw an error somehow
   // not as if the kernel shouldn't have this same code at the end of the main though
