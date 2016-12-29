@@ -32,7 +32,8 @@ uint64_t GetNextEntry()
     EFI_STATUS allocstatus = uefi_call_wrapper(BS->AllocatePages, 4, AllocateAnyPages, MEM_PAGING, size, &pages);
     if(allocstatus != EFI_SUCCESS)
     {
-      Print(L"Paging space allocation failed");
+      Print(L"Paging space allocation failed\n");
+      Print(L"Current: 0x%llX \n", current);
       return -1;
     }
     bootloader_memset((void*)pages, size*0x1000, 0x0);
@@ -123,7 +124,7 @@ void initCR3()
   EFI_STATUS allocstatus = uefi_call_wrapper(BS->AllocatePages, 4, AllocateAnyPages, MEM_PAGING, size, &pages);
   if(allocstatus != EFI_SUCCESS)
   {
-    Print(L"Paging space allocation failed");
+    Print(L"Paging space allocation failed\n");
     return;
   }
 

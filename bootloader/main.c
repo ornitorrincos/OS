@@ -148,7 +148,8 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   PH* ph = (PH*)(((uint64_t)kernel) + kernel->e_phoff); // use this to know how much and what pages to map
 
-  kernel_size = ph->p_filesz;
+  //kernel_size = ph->p_filesz;
+  kernel_size = ph->p_memsz;
 
   while(currentvm < kernel_size)
   {
@@ -156,6 +157,9 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
     currentvm += 0x1000;
   }
+
+  // now map already allocated 8KB for the Kernel Stack
+
 
   //printCR3();
 

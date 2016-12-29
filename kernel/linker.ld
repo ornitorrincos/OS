@@ -1,4 +1,5 @@
-ENTRY(kmain)
+ENTRY(loader)
+/* ENTRY(kmain) */
 
 SECTIONS
 {

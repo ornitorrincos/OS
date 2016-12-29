@@ -20,7 +20,7 @@ typedef struct _Pixel
   uint8_t B;
   uint8_t G;
   uint8_t R;
-  //UINT8 Z;
+  uint8_t Z;
 } Pixel;
 
 int kmain(void * osdata)
@@ -38,11 +38,11 @@ int kmain(void * osdata)
       for(j = 0; j < 256; ++j)
       {
         Pixel p;
-        p.R = 255;
+        p.R = 0;
         p.G = 255;
-        p.B = 255;
-        //p.Z = 255;
-        fb[j + 1024*i] = p;
+        p.B = 0;
+        p.Z = 255;
+        fb[j + 800*i] = p; // original: 1024 but 800 seems to work better(maybe we are not setting the display mode correctly
       }
     }
   }
