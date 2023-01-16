@@ -83,5 +83,9 @@ int kmain(void * osdata)
     }
   }
 
+  __asm__ __volatile__("cli;");
+
+  while(1);
+
   return 0;
 }

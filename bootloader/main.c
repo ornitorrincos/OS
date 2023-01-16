@@ -120,20 +120,36 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 
   
 
-  /*for(int entry = 0; entry < elements; ++entry)
+  for(int entry = 0; entry < elements; ++entry)
   {
     mapiterator = (EFI_MEMORY_DESCRIPTOR*)(((EFI_PHYSICAL_ADDRESS)mapiterator + descriptorsize));
     uint64_t page = mapiterator->PhysicalStart;
 
+    uint64_t Pstart = mapiterator->PhysicalStart;
+    uint64_t Vstart = mapiterator->VirtualStart;
+    uint64_t Npages = mapiterator->NumberOfPages;
+    uint64_t Tpage = mapiterator->Type;
+
+    if(Pstart != Vstart)
+    {
+      Print(L"\n");
+      Print(L"---------------------------------------\n");
+      Print(L"NON MATCHING PHYSICAL AND VIRTUAL PAGES\n");
+      Print(L"Physical Start:   0x%llX\n", Pstart);
+      Print(L"Virtual Start:    0x%llX\n", Vstart);
+      Print(L"Number of Pages:  0x%llX\n", Npages);
+      Print(L"---------------------------------------\n");
+      Print(L"\n");
+    }
 
     //Print(L"page: 0x%llX\n", page);
-    for(int pageentry = 0; pageentry < mapiterator->NumberOfPages; pageentry++)
+    /* for(int pageentry = 0; pageentry < mapiterator->NumberOfPages; pageentry++)
     {
       //Print(L"SetAddr\n");
       SetVirtualAddress(page, page);
       page += 0x1000;
-    }
-  }*/
+    } */
+  }
 
   uint64_t maxaddr = 0x0000001000000000ull;
   for(uint64_t page = 0x0; page < maxaddr; page += 0x1000)
@@ -244,6 +260,7 @@ efi_main (EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
   osdata->FBHeight = 768;
   osdata->FBAddr = fb;
   osdata->PixelSize = 24;
+  osdata->MEMMap = map;
   osdata->RAMDisk = NULL;
 
   // this while only serves not to call the kernel for now

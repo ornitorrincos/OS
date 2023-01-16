@@ -21,6 +21,8 @@ endif
 LDFLAGS         = -nostdlib -znocombreloc -T $(EFI_LDS) -shared \
 		  -Bsymbolic -L $(EFILIB) -L $(LIB) $(EFI_CRT_OBJS) 
 
+.PHONY: all debug clean
+
 all: $(TARGET)
 
 hello.so: $(OBJS)
